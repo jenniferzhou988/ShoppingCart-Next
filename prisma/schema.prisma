@@ -1,0 +1,239 @@
+// Prisma schema for PostgreSQL backend
+// Run `npx prisma migrate dev --name init` after setting DATABASE_URL in .env
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      Role     @relation(fields: [roleId], references: [id])
+  roleId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  loginLogs UserLoginLog[]
+}
+
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[]
+}
+
+model UserLoginLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress String?
+  userAgent String?
+  success   Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("user_login_logs")
+}
+
+model ProductCategory {
+  id                  Int      @id @default(autoincrement())
+  productCategoryName String   @unique
+  description         String?
+  comment             String?
+  created             DateTime @default(now())
+  createdBy           String?
+  modified            DateTime @updatedAt
+  modifiedBy          String?
+  productCategoryLinks ProductCategoryLink[]
+}
+
+model Product {
+  id                  Int             @id @default(autoincrement())
+  productName         String
+  description         String?
+  price               Decimal
+  salePrice           Decimal?
+  csdnNumber          String?
+  created             DateTime        @default(now())
+  createdBy           String?
+  modified            DateTime        @updatedAt
+  modifiedBy          String?
+  productImages       ProductImage[]
+  productStorage      ProductStorage?
+  productsImports     ProductsImport[]
+  shopCarts           ShopCart[]
+  orderDetails        OrderDetail[]
+  productCategoryLinks ProductCategoryLink[]
+}
+
+model ProductImage {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  image     String
+  created   DateTime @default(now())
+  createdBy String?
+  modified  DateTime @updatedAt
+  modifiedBy String?
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductStorage {
+  id        Int     @id @default(autoincrement())
+  productId Int     @unique
+  quantity  Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductsImport {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  priceIn   Decimal
+  quantity  Int
+  created   DateTime @default(now())
+  createdBy String?
+  modified  DateTime @updatedAt
+  modifiedBy String?
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductCategoryLink {
+  id               Int             @id @default(autoincrement())
+  productId        Int
+  productCategoryId Int
+  product          Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productCategory  ProductCategory @relation(fields: [productCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, productCategoryId])
+}
+
+model Customer {
+  id           Int      @id @default(autoincrement())
+  firstName    String
+  middleName   String?
+  lastName     String
+  primaryPhone String
+  secondPhone  String?
+  created      DateTime @default(now())
+  modified     DateTime @updatedAt
+  customerAddresses CustomerAddress[]
+  orders       Order[]
+  billingBankCardInfos BillingBankCardInfo[]
+}
+
+model Address {
+  id           Int      @id @default(autoincrement())
+  streetNumber String
+  street       String
+  city         String
+  postCode     String
+  province     String
+  country      String
+  created      DateTime @default(now())
+  createdBy    String?
+  modified     DateTime @updatedAt
+  modifiedBy   String?
+  customerAddresses CustomerAddress[]
+  shippingOrders Order[] @relation("ShippingAddress")
+  billingOrders  Order[] @relation("BillingAddress")
+  orderShippingRecords OrderShippingRecord[] @relation("OrderShippingAddress")
+}
+
+model CustomerAddress {
+  id         Int      @id @default(autoincrement())
+  customerId Int
+  addressId  Int
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  address    Address  @relation(fields: [addressId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, addressId])
+}
+
+model ShopCart {
+  id         Int     @id @default(autoincrement())
+  productId  Int
+  quantity   Int
+  price      Decimal
+  totalPrice Decimal
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id                    Int                 @id @default(autoincrement())
+  customerId            Int
+  shippingAddressId     Int
+  billingAddressId      Int
+  billingBankCardInfoId Int?
+  orderStatusId         Int?
+  created               DateTime            @default(now())
+  createdBy             String?
+  modified              DateTime            @updatedAt
+  modifiedBy            String?
+  customer              Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  shippingAddress       Address             @relation("ShippingAddress", fields: [shippingAddressId], references: [id], onDelete: Cascade)
+  billingAddress        Address             @relation("BillingAddress", fields: [billingAddressId], references: [id], onDelete: Cascade)
+  billingBankCardInfo   BillingBankCardInfo? @relation(fields: [billingBankCardInfoId], references: [id], onDelete: SetNull)
+  orderStatus           OrderStatus?        @relation(fields: [orderStatusId], references: [id], onDelete: SetNull)
+  orderShippingRecords  OrderShippingRecord[]
+  orderDetails          OrderDetail[]
+}
+
+model BillingType {
+  id              Int    @id @default(autoincrement())
+  billingTypeName String @unique
+  comment         String?
+  billingBankCardInfos BillingBankCardInfo[]
+}
+
+model BillingBankCardInfo {
+  id           Int         @id @default(autoincrement())
+  billingTypeId Int
+  customerId   Int
+  cardNumber   String      // Encrypted
+  last4Digits  String
+  expiryMonth  Int
+  expiryDate   Int         // Assuming this is expiry year
+  cvw          String      // CVV
+  created      DateTime    @default(now())
+  createdBy    String?
+  modified     DateTime    @updatedAt
+  modifiedBy   String?
+  billingType  BillingType @relation(fields: [billingTypeId], references: [id], onDelete: Cascade)
+  customer     Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orders       Order[]
+}
+
+model OrderStatus {
+  id          Int    @id @default(autoincrement())
+  orderStatus String @unique
+  orders      Order[]
+}
+
+model OrderShippingRecord {
+  id                Int      @id @default(autoincrement())
+  orderId           Int
+  shippingAddressId Int
+  trackingNumber    String
+  shippingDate      DateTime
+  created           DateTime @default(now())
+  createdBy         String?
+  modified          DateTime @updatedAt
+  modifiedBy        String?
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  shippingAddress   Address  @relation("OrderShippingAddress", fields: [shippingAddressId], references: [id], onDelete: Cascade)
+}
+
+model OrderDetail {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  productId  Int
+  salePrice  Decimal
+  quantity   Int
+  totalPrice Decimal
+  created    DateTime @default(now())
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
