@@ -6,7 +6,7 @@ import { validateStartup } from "../../../../../lib/startup";
 // POST - Add order details to an existing order
 export async function POST(
   req: NextRequest,
-  { params }: { params: { orderId: string } }
+  { params }: { params: { id: string } }
 ) {
   validateStartup();
 
@@ -22,7 +22,7 @@ export async function POST(
       return NextResponse.json({ error: "Invalid token or user not found" }, { status: 401 });
     }
 
-    const orderId = parseInt(params.orderId);
+    const orderId = parseInt(params.id);
     if (isNaN(orderId)) {
       return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
     }

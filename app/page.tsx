@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { getAuthState, logout, isAuthenticated, getCurrentUser, type AuthState } from "../lib/auth-client";
 
 export default function Home() {
@@ -18,94 +19,128 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            Welcome to Next.js Auth App
-          </h1>
-
-          {authState.isAuthenticated ? (
-            <div className="space-y-4">
-              <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-                Welcome back, <span className="font-semibold">{authState.user?.email}</span>!
-                You are logged in as a <span className="font-semibold">{authState.user?.role}</span>.
-              </p>
-              <div className="flex gap-4">
-                {authState.user?.role === 'admin' && (
-                  <a
-                    href="/admin"
-                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                  >
-                    Admin Panel
-                  </a>
-                )}
-                <button
-                  onClick={handleLogout}
-                  className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-                Please sign in to access your account.
-              </p>
-              <div className="flex gap-4">
-                <a
-                  href="/login"
-                  className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                  Sign In
-                </a>
-                <a
-                  href="/register"
-                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                >
-                  Sign Up
-                </a>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+    <div className="bg-gray-50">
+      {/* Hero Section */}
+      <div className="bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+              className="mx-auto mb-8 dark:invert"
+              src="/next.svg"
+              alt="ShoppingCart logo"
+              width={120}
+              height={25}
+              priority
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl md:text-6xl mb-4">
+              Welcome to ShoppingCart
+            </h1>
+            <p className="max-w-2xl mx-auto text-xl text-gray-600 mb-8">
+              Discover amazing products across various categories. Shop with confidence and enjoy fast, secure delivery.
+            </p>
+
+            {authState.isAuthenticated ? (
+              <div className="space-y-6">
+                <div className="bg-gray-50 rounded-lg p-6 max-w-md mx-auto">
+                  <p className="text-lg text-gray-700 mb-4">
+                    Welcome back, <span className="font-semibold text-blue-600">{authState.user?.email}</span>!
+                  </p>
+                  <p className="text-sm text-gray-600 mb-4">
+                    You are logged in as a <span className="font-medium">{authState.user?.role}</span>.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Link
+                      href="/products"
+                      className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors text-center"
+                    >
+                      Browse Products
+                    </Link>
+                    {authState.user?.role === 'admin' && (
+                      <Link
+                        href="/admin"
+                        className="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 transition-colors text-center"
+                      >
+                        Admin Panel
+                      </Link>
+                    )}
+                    <button
+                      onClick={handleLogout}
+                      className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition-colors"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link
+                    href="/products"
+                    className="bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 transition-colors text-center font-medium"
+                  >
+                    Start Shopping
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="bg-white text-blue-600 border border-blue-600 px-8 py-3 rounded-md hover:bg-blue-50 transition-colors text-center font-medium"
+                  >
+                    Create Account
+                  </Link>
+                </div>
+                <p className="text-gray-600">
+                  Already have an account?{' '}
+                  <Link href="/login" className="text-blue-600 hover:text-blue-800 font-medium">
+                    Sign in
+                  </Link>
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      </main>
+      </div>
+
+      {/* Features Section */}
+      <div className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose ShoppingCart?</h2>
+            <p className="text-xl text-gray-600">Experience the best online shopping with our premium features</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Fast Delivery</h3>
+              <p className="text-gray-600">Get your orders delivered quickly and securely to your doorstep.</p>
+            </div>
+
+            <div className="text-center">
+              <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Quality Products</h3>
+              <p className="text-gray-600">Shop from a curated selection of high-quality products you can trust.</p>
+            </div>
+
+            <div className="text-center">
+              <div className="bg-purple-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <svg className="h-8 w-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Secure Shopping</h3>
+              <p className="text-gray-600">Your personal information and payments are always protected.</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
