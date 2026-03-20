@@ -142,6 +142,231 @@ curl -X PUT http://localhost:3000/api/product/1 \
 curl -X DELETE http://localhost:3000/api/product/1
 ```
 
+## Shopping Cart API
+
+The Shopping Cart API allows authenticated users to manage their shopping carts, add/remove items, and track their selections.
+
+### Authentication Required
+
+All shopping cart endpoints require JWT authentication via the `Authorization: Bearer <token>` header.
+
+### Endpoints:
+
+1. **GET /api/shopping-cart** - Get user's shopping cart
+   - Returns: User's current shopping cart with all items and product details
+   - Returns empty cart if none exists
+
+2. **POST /api/shopping-cart** - Create new shopping cart
+   - Creates a new empty shopping cart for the authenticated user
+   - Returns: Created shopping cart object
+   - Returns 409 if user already has an active cart
+
+3. **GET /api/shopping-cart/[id]** - Get specific shopping cart by ID
+   - Returns: Shopping cart with all items and product details (images, storage info)
+   - Only returns cart if it belongs to the authenticated user
+   - Returns 404 if cart not found or doesn't belong to user
+
+4. **POST /api/shopping-cart/items** - Add item to shopping cart
+   - Request body:
+     ```json
+     {
+       "productId": 1,
+       "quantity": 2
+     }
+     ```
+   - If item already exists in cart, quantity is increased
+   - If cart doesn't exist, one is created automatically
+   - Returns: Added/updated cart item with product details
+
+5. **DELETE /api/shopping-cart/items/[itemId]** - Remove item from shopping cart
+   - Removes the specified item from the user's shopping cart
+   - Returns: Success message
+   - Returns 404 if item not found or doesn't belong to user
+
+### Examples:
+
+```bash
+# Get user's shopping cart
+curl http://localhost:3000/api/shopping-cart \
+  -H "Authorization: Bearer <token>"
+
+# Create new shopping cart
+curl -X POST http://localhost:3000/api/shopping-cart \
+  -H "Authorization: Bearer <token>"
+
+# Get specific cart by ID
+curl http://localhost:3000/api/shopping-cart/1 \
+  -H "Authorization: Bearer <token>"
+
+# Add item to cart
+curl -X POST http://localhost:3000/api/shopping-cart/items \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "productId": 1,
+    "quantity": 2
+  }'
+
+# Remove item from cart
+curl -X DELETE http://localhost:3000/api/shopping-cart/items/123 \
+  -H "Authorization: Bearer <token>"
+```
+
+### Shopping Cart Features:
+
+- **User Isolation**: Users can only access their own shopping carts
+- **Automatic Cart Creation**: Cart is created when first item is added
+- **Quantity Management**: Adding existing items increases quantity instead of creating duplicates
+- **Price Calculation**: Automatic calculation of total price per item (`price * quantity`)
+- **Product Validation**: Ensures products exist before adding to cart
+- **Rich Product Data**: Cart items include full product details (images, storage, categories)
+
+## Order API
+
+The Order API allows authenticated users to create, manage, and track their orders. Admins have additional privileges to manage all orders.
+
+### Authentication Required
+
+All order endpoints require JWT authentication via the `Authorization: Bearer <token>` header.
+
+### Endpoints:
+
+1. **GET /api/order** - Get orders
+   - **Admin**: Returns all orders in the system
+   - **User**: Returns only orders belonging to the authenticated user
+   - Returns: Array of orders with full details (customer, addresses, billing, status, items)
+
+2. **POST /api/order** - Create new order
+   - Request body:
+     ```json
+     {
+       "shippingAddressId": 1,
+       "billingAddressId": 1,
+       "billingBankCardInfoId": 1,
+       "orderDetails": [
+         {
+           "productId": 1,
+           "quantity": 2,
+           "salePrice": 99.99
+         }
+       ]
+     }
+     ```
+   - Creates order with "Ordered" status and calculates prices automatically
+   - Returns: Complete order object with all relationships
+
+3. **GET /api/order/[id]** - Get specific order by ID
+   - **Admin**: Can access any order
+   - **User**: Can only access their own orders
+   - Returns: Complete order with customer, addresses, billing, status, items, and shipping records
+
+4. **PUT /api/order/[id]** - Update order
+   - Can update shipping/billing addresses and payment method
+   - Cannot modify orders that are shipped or completed
+   - Returns: Updated order object
+
+5. **POST /api/order/[orderId]/details** - Add items to existing order
+   - Request body:
+     ```json
+     {
+       "orderDetails": [
+         {
+           "productId": 2,
+           "quantity": 1,
+           "salePrice": 49.99
+         }
+       ]
+     }
+     ```
+   - Adds new items or increases quantity of existing items
+   - Cannot modify shipped or completed orders
+   - Returns: Added order details
+
+6. **PUT /api/order/[orderId]/status** - Update order status
+   - Request body:
+     ```json
+     {
+       "orderStatus": "Shipping"
+     }
+     ```
+   - Valid statuses: "Ordered" → "Shipping" → "Received"
+   - Enforces status transition rules
+   - Returns: Updated order with new status
+
+### Order Status Flow:
+
+- **Ordered**: Initial status when order is created
+- **Shipping**: Order has been shipped (can only transition from Ordered)
+- **Received**: Order has been delivered (can transition from Ordered or Shipping)
+
+### Examples:
+
+```bash
+# Get user's orders
+curl http://localhost:3000/api/order \
+  -H "Authorization: Bearer <token>"
+
+# Create new order
+curl -X POST http://localhost:3000/api/order \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "shippingAddressId": 1,
+    "billingAddressId": 1,
+    "billingBankCardInfoId": 1,
+    "orderDetails": [
+      {
+        "productId": 1,
+        "quantity": 2
+      }
+    ]
+  }'
+
+# Get specific order
+curl http://localhost:3000/api/order/1 \
+  -H "Authorization: Bearer <token>"
+
+# Update order addresses
+curl -X PUT http://localhost:3000/api/order/1 \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "shippingAddressId": 2,
+    "billingAddressId": 2
+  }'
+
+# Add items to order
+curl -X POST http://localhost:3000/api/order/1/details \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orderDetails": [
+      {
+        "productId": 2,
+        "quantity": 1
+      }
+    ]
+  }'
+
+# Update order status
+curl -X PUT http://localhost:3000/api/order/1/status \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orderStatus": "Shipping"
+  }'
+```
+
+### Order Features:
+
+- **Role-based Access**: Users see only their orders, admins see all orders
+- **Address Validation**: Ensures shipping/billing addresses belong to the customer
+- **Payment Validation**: Verifies billing cards belong to the customer
+- **Status Transitions**: Enforces valid order status changes
+- **Price Calculation**: Automatically calculates sale prices and totals
+- **Order Modification**: Prevents changes to shipped/completed orders
+- **Rich Data**: Includes customer, addresses, billing, products, and shipping info
+
 ## Address API
 
 The Address API allows you to manage customer addresses for shipping and billing purposes.

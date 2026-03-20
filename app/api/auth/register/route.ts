@@ -39,14 +39,24 @@ export async function POST(req: NextRequest) {
     create: { name: roleName ?? "USER" },
   });
 
+  // Create a customer profile for the user
+  const customer = await prisma.customer.create({
+    data: {
+      firstName: normalizedEmail, // Using email as firstName for now - can be updated later
+      lastName: "User",
+      primaryPhone: "000-000-0000", // Default phone - should be updated by user
+    },
+  });
+
   const hashed = await hashPassword(password);
   const user = await prisma.user.create({
     data: {
       email: normalizedEmail,
       password: hashed,
       role: { connect: { id: role.id } },
+      customer: { connect: { id: customer.id } },
     },
-    include: { role: true },
+    include: { role: true, customer: true },
   });
 
   const token = signToken({

@@ -16,6 +16,8 @@ model User {
   password  String
   role      Role     @relation(fields: [roleId], references: [id])
   roleId    Int
+  customerId Int?    @unique
+  customer  Customer? @relation(fields: [customerId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   loginLogs UserLoginLog[]
@@ -117,6 +119,7 @@ model Customer {
   lastName     String
   primaryPhone String
   secondPhone  String?
+  user         User?
   created      DateTime @default(now())
   modified     DateTime @updatedAt
   customerAddresses    CustomerAddress[]
