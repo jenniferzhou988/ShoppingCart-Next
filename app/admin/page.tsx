@@ -1,0 +1,501 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getAuthState } from '../../lib/auth-client';
+
+type Product = {
+  id: number;
+  productName: string;
+  description?: string;
+  price: string | number;
+  salePrice?: string | number;
+  csdnNumber?: string;
+  createdBy?: string;
+  modifiedBy?: string;
+  productCategoryLinks?: { productCategoryId: number; productCategory: { id: number; productCategoryName: string } }[];
+  productImages?: { id: number; image: string }[];
+};
+
+type Category = {
+  id: number;
+  productCategoryName: string;
+  description?: string;
+  comment?: string;
+};
+
+type ProductImage = {
+  id: number;
+  productId: number;
+  image: string;
+};
+
+const emptyForm = {
+  productName: '',
+  description: '',
+  price: '',
+  salePrice: '',
+  csdnNumber: '',
+  createdBy: '',
+  categoryIds: [] as number[],
+};
+
+export default function AdminProductManagePage() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
+  const [message, setMessage] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  const [productForm, setProductForm] = useState(emptyForm);
+  const [categoryForm, setCategoryForm] = useState({ productCategoryName: '', description: '', comment: '', createdBy: '' });
+  const [imageForm, setImageForm] = useState({ productId: 0, image: '' });
+
+  const token = useMemo(() => getAuthState().token, []);
+  const authHeader = useMemo<HeadersInit | undefined>(() => {
+    if (token) return { Authorization: `Bearer ${token}` };
+    return undefined;
+  }, [token]);
+
+  const jsonHeaders = useMemo<HeadersInit>(() => ({
+    'Content-Type': 'application/json',
+    ...(authHeader ? (authHeader as Record<string, string>) : {}),
+  }), [authHeader]);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const [productRes, categoryRes] = await Promise.all([
+        fetch('/api/product', { headers: jsonHeaders }),
+        fetch('/api/product-category', { headers: jsonHeaders }),
+      ]);
+      if (!productRes.ok || !categoryRes.ok) {
+        throw new Error('Failed to fetch products or categories');
+      }
+
+      const prods = (await productRes.json()) as Product[];
+      const cats = (await categoryRes.json()) as Category[];
+
+      setProducts(prods);
+      setCategories(cats);
+    } catch (err) {
+      console.error(err);
+      setError(String(err));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [jsonHeaders]);
+
+  const fetchAllImages = useCallback(async () => {
+    try {
+      const res = await fetch('/api/product-image', { headers: { ...authHeader } });
+      if (!res.ok) throw new Error('Failed to fetch product images');
+      setProductImages((await res.json()) as ProductImage[]);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [authHeader]);
+
+  useEffect(() => {
+    const user = getAuthState().user;
+    if (user?.role?.toLowerCase() === 'admin') {
+      setIsAdmin(true);
+    }
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchData();
+      fetchAllImages();
+    }
+  }, [isAdmin, fetchData, fetchAllImages]);
+
+  const resetFeedback = () => {
+    setMessage('');
+    setError('');
+  };
+
+  const handleProductCreate = async () => {
+    resetFeedback();
+    try {
+      const body = {
+        productName: productForm.productName,
+        description: productForm.description,
+        price: Number(productForm.price),
+        salePrice: productForm.salePrice ? Number(productForm.salePrice) : undefined,
+        csdnNumber: productForm.csdnNumber,
+        createdBy: productForm.createdBy,
+        categoryIds: productForm.categoryIds,
+      };
+
+      const res = await fetch('/api/product', {
+        method: 'POST',
+        headers: jsonHeaders,
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data?.error || 'Product creation failed');
+      }
+
+      setMessage('Product created successfully');
+      setProductForm(emptyForm);
+      fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error creating product');
+    }
+  };
+
+  const handleProductDelete = async (id: number) => {
+    resetFeedback();
+    try {
+      const res = await fetch(`/api/product/${id}`, { method: 'DELETE', headers: { ...authHeader } });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data?.error || 'Delete failed');
+      }
+      setMessage('Product deleted');
+      fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Delete failed');
+    }
+  };
+
+  const handleCategoryCreate = async () => {
+    resetFeedback();
+    try {
+      const res = await fetch('/api/product-category', {
+        method: 'POST',
+        headers: jsonHeaders,
+        body: JSON.stringify(categoryForm),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data?.error || 'Category creation failed');
+      }
+      setMessage('Category created');
+      setCategoryForm({ productCategoryName: '', description: '', comment: '', createdBy: '' });
+      fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Category creation failed');
+    }
+  };
+
+  const handleCategoryDelete = async (id: number) => {
+    resetFeedback();
+    try {
+      const res = await fetch(`/api/product-category/${id}`, { method: 'DELETE', headers: { ...authHeader } });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data?.error || 'Delete category failed');
+      }
+      setMessage('Category deleted');
+      fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Delete category failed');
+    }
+  };
+
+  const handleCategoryUpdate = async (id: number) => {
+    resetFeedback();
+    const cat = categories.find((c) => c.id === id);
+    if (!cat) return;
+    try {
+      const res = await fetch(`/api/product-category/${id}`, {
+        method: 'PATCH',
+        headers: jsonHeaders,
+        body: JSON.stringify({ productCategoryName: cat.productCategoryName, description: cat.description, comment: cat.comment }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data?.error || 'Update category failed');
+      }
+      setMessage('Category updated');
+      fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Update category failed');
+    }
+  };
+
+  const handleImageUpload = async () => {
+    resetFeedback();
+    if (!imageForm.productId || !imageForm.image) {
+      setError('Product and image URL are required');
+      return;
+    }
+    try {
+      const res = await fetch('/api/product-image', {
+        method: 'POST',
+        headers: jsonHeaders,
+        body: JSON.stringify(imageForm),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data?.error || 'Image upload failed');
+      }
+      setMessage('Image uploaded');
+      setImageForm({ productId: 0, image: '' });
+      fetchAllImages();
+      fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Image upload failed');
+    }
+  };
+
+  if (isLoading) {
+    return <div className="p-6 text-center">Loading admin panel...</div>;
+  }
+
+  if (!isAdmin) {
+    return <div className="p-6 text-center text-red-600">Access denied. Admin role is required.</div>;
+  }
+
+  return (
+    <div className="p-6 space-y-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <div className="max-w-6xl mx-auto space-y-4">
+        <h1 className="text-2xl font-bold">Product Management (Admin)</h1>
+        {message && <div className="rounded-md bg-green-50 p-3 text-green-800">{message}</div>}
+        {error && <div className="rounded-md bg-red-50 p-3 text-red-800">{error}</div>}
+
+        <section className="rounded-lg bg-white p-4 shadow dark:bg-zinc-800">
+          <h2 className="text-xl font-semibold mb-2">Add / Update Product</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input
+              id="productName"
+              placeholder="Product Name"
+              value={productForm.productName}
+              onChange={(e) => setProductForm({ ...productForm, productName: e.target.value })}
+              className="input"
+            />
+            <input
+              id="price"
+              type="number"
+              placeholder="Price"
+              value={productForm.price}
+              onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
+              className="input"
+            />
+            <input
+              id="salePrice"
+              type="number"
+              placeholder="Sale Price"
+              value={productForm.salePrice}
+              onChange={(e) => setProductForm({ ...productForm, salePrice: e.target.value })}
+              className="input"
+            />
+            <input
+              id="csdnNumber"
+              placeholder="CSDN Number"
+              value={productForm.csdnNumber}
+              onChange={(e) => setProductForm({ ...productForm, csdnNumber: e.target.value })}
+              className="input"
+            />
+            <input
+              id="createdBy"
+              placeholder="Created By"
+              value={productForm.createdBy}
+              onChange={(e) => setProductForm({ ...productForm, createdBy: e.target.value })}
+              className="input"
+            />
+            <select
+              multiple
+              value={productForm.categoryIds.map(String)}
+              onChange={(e) => {
+                const selected = Array.from(e.target.selectedOptions).map((opt) => Number(opt.value));
+                setProductForm({ ...productForm, categoryIds: selected });
+              }}
+              className="input h-28"
+            >
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.productCategoryName}</option>
+              ))}
+            </select>
+            <textarea
+              id="description"
+              placeholder="Description"
+              value={productForm.description}
+              onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+              className="input md:col-span-3"
+            />
+
+            <button
+              onClick={handleProductCreate}
+              className="rounded-md bg-indigo-600 px-3 py-2 font-semibold text-white hover:bg-indigo-700"
+            >
+              Create Product
+            </button>
+          </div>
+        </section>
+
+        <section className="rounded-lg bg-white p-4 shadow dark:bg-zinc-800">
+          <h2 className="text-xl font-semibold mb-2">Categories</h2>
+          <div className="grid md:grid-cols-4 gap-3 mb-3">
+            <input
+              placeholder="Category Name"
+              value={categoryForm.productCategoryName}
+              onChange={(e) => setCategoryForm({ ...categoryForm, productCategoryName: e.target.value })}
+              className="input"
+            />
+            <input
+              placeholder="Description"
+              value={categoryForm.description}
+              onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+              className="input"
+            />
+            <input
+              placeholder="Comment"
+              value={categoryForm.comment}
+              onChange={(e) => setCategoryForm({ ...categoryForm, comment: e.target.value })}
+              className="input"
+            />
+            <button
+              onClick={handleCategoryCreate}
+              className="rounded-md bg-green-600 px-3 py-2 font-semibold text-white hover:bg-green-700"
+            >
+              Add Category
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900"><tr>
+                <th className="px-3 py-2 text-left text-sm font-medium">Name</th>
+                <th className="px-3 py-2 text-left text-sm font-medium">Description</th>
+                <th className="px-3 py-2 text-left text-sm font-medium">Comment</th>
+                <th className="px-3 py-2 text-left text-sm font-medium">Actions</th>
+              </tr></thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {categories.map((category) => (
+                  <tr key={category.id}>
+                    <td className="px-3 py-2 font-semibold">
+                      <input
+                        value={category.productCategoryName}
+                        onChange={(e) => {
+                          const update = categories.map((cur) => cur.id === category.id ? { ...cur, productCategoryName: e.target.value } : cur);
+                          setCategories(update);
+                        }}
+                        className="input"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={category.description ?? ''}
+                        onChange={(e) => {
+                          const update = categories.map((cur) => cur.id === category.id ? { ...cur, description: e.target.value } : cur);
+                          setCategories(update);
+                        }}
+                        className="input"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={category.comment ?? ''}
+                        onChange={(e) => {
+                          const update = categories.map((cur) => cur.id === category.id ? { ...cur, comment: e.target.value } : cur);
+                          setCategories(update);
+                        }}
+                        className="input"
+                      />
+                    </td>
+                    <td className="px-3 py-2 flex gap-2">
+                      <button
+                        onClick={() => handleCategoryUpdate(category.id)}
+                        className="rounded-md bg-blue-600 px-2 py-1 text-white hover:bg-blue-700"
+                      >Update</button>
+                      <button
+                        onClick={() => handleCategoryDelete(category.id)}
+                        className="rounded-md bg-red-600 px-2 py-1 text-white hover:bg-red-700"
+                      >Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="rounded-lg bg-white p-4 shadow dark:bg-zinc-800">
+          <h2 className="text-xl font-semibold mb-2">Product Images</h2>
+          <div className="grid md:grid-cols-3 gap-3 mb-4">
+            <select
+              value={imageForm.productId}
+              onChange={(e) => setImageForm({ ...imageForm, productId: Number(e.target.value) })}
+              className="input"
+            >
+              <option value={0}>Select Product</option>
+              {products.map((product) => (
+                <option key={product.id} value={product.id}>{product.productName}</option>
+              ))}
+            </select>
+            <input
+              placeholder="Image URL"
+              value={imageForm.image}
+              onChange={(e) => setImageForm({ ...imageForm, image: e.target.value })}
+              className="input"
+            />
+            <button
+              onClick={handleImageUpload}
+              className="rounded-md bg-indigo-600 px-3 py-2 font-semibold text-white hover:bg-indigo-700"
+            >
+              Upload Image
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900"><tr>
+                <th className="px-3 py-2 text-left">Product</th>
+                <th className="px-3 py-2 text-left">Image</th>
+              </tr></thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {productImages.map((img) => {
+                  const prod = products.find((p) => p.id === img.productId);
+                  return (
+                    <tr key={img.id}>
+                      <td className="px-3 py-2">{prod?.productName ?? 'Unknown'}</td>
+                      <td className="px-3 py-2">
+                        <a href={img.image} target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400">{img.image}</a>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="rounded-lg bg-white p-4 shadow dark:bg-zinc-800">
+          <h2 className="text-xl font-semibold mb-2">Products</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900"><tr>
+                <th className="px-3 py-2">Name</th>
+                <th className="px-3 py-2">Price</th>
+                <th className="px-3 py-2">Sale</th>
+                <th className="px-3 py-2">Categories</th>
+                <th className="px-3 py-2">Actions</th>
+              </tr></thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {products.map((product) => (
+                  <tr key={product.id}>
+                    <td className="px-3 py-2">{product.productName}</td>
+                    <td className="px-3 py-2">{product.price}</td>
+                    <td className="px-3 py-2">{product.salePrice ?? '—'}</td>
+                    <td className="px-3 py-2">{product.productCategoryLinks?.map((link) => link.productCategory.productCategoryName).join(', ')}</td>
+                    <td className="px-3 py-2">
+                      <button
+                        onClick={() => handleProductDelete(product.id)}
+                        className="rounded-md bg-red-600 px-2 py-1 text-white hover:bg-red-700"
+                      >Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
