@@ -62,12 +62,12 @@ model Product {
   createdBy           String?
   modified            DateTime        @updatedAt
   modifiedBy          String?
-  productImages       ProductImage[]
-  productStorage      ProductStorage?
-  productsImports     ProductsImport[]
-  shopCarts           ShopCart[]
-  orderDetails        OrderDetail[]
-  productCategoryLinks ProductCategoryLink[]
+  productImages          ProductImage[]
+  productStorage         ProductStorage?
+  productsImports        ProductsImport[]
+  shoppingCartDetails    ShoppingCartDetail[]
+  orderDetails           OrderDetail[]
+  productCategoryLinks   ProductCategoryLink[]
 }
 
 model ProductImage {
@@ -119,9 +119,10 @@ model Customer {
   secondPhone  String?
   created      DateTime @default(now())
   modified     DateTime @updatedAt
-  customerAddresses CustomerAddress[]
-  orders       Order[]
+  customerAddresses    CustomerAddress[]
+  orders               Order[]
   billingBankCardInfos BillingBankCardInfo[]
+  shoppingCarts        ShoppingCart[]
 }
 
 model Address {
@@ -152,13 +153,23 @@ model CustomerAddress {
   @@unique([customerId, addressId])
 }
 
-model ShopCart {
-  id         Int     @id @default(autoincrement())
-  productId  Int
-  quantity   Int
-  price      Decimal
-  totalPrice Decimal
-  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+model ShoppingCart {
+  id                    Int                   @id @default(autoincrement())
+  customerId            Int
+  created               DateTime              @default(now())
+  customer              Customer              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  shoppingCartDetails   ShoppingCartDetail[]
+}
+
+model ShoppingCartDetail {
+  id            Int           @id @default(autoincrement())
+  shoppingCartId Int
+  productId     Int
+  quantity      Int
+  price         Decimal
+  totalPrice    Decimal
+  shoppingCart  ShoppingCart  @relation(fields: [shoppingCartId], references: [id], onDelete: Cascade)
+  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model Order {
