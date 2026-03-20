@@ -58,7 +58,8 @@ The application features a responsive navigation menu that dynamically displays 
 - **All Products Page**: `/products` - Complete product catalog with search and filtering
 - **Search Functionality**: Real-time search across product names and descriptions
 - **Category Filtering**: Filter products by selected categories
-- **Product Details**: Individual product pages with full information
+- **Product Details**: `/product/[id]` page with image gallery, category links, price, stock, and description
+- **Add to Cart UI**: Add products from `/products` and `/product/[id]`, then review in `/shopping-cart`
 
 ## REST API (JWT Authentication)
 
@@ -166,6 +167,19 @@ curl -X DELETE http://localhost:3000/api/product/1
 ## Shopping Cart API
 
 The Shopping Cart API allows authenticated users to manage their shopping carts, add/remove items, and track their selections.
+
+## Shopping Cart UI (LocalStorage)
+
+The app also includes a client-side cart experience that persists in browser storage:
+
+- **Cart page**: `/shopping-cart`
+- **Storage key**: `shopping-cart`
+- **Persistence**: Cart survives page refresh/browser restart on the same browser profile
+- **Actions**: Add item, increase/decrease quantity, remove item, clear cart
+
+Notes:
+- This LocalStorage cart is independent from the authenticated server cart API.
+- LocalStorage cart data is managed by `lib/shopping-cart.ts`.
 
 ### Authentication Required
 
@@ -283,7 +297,8 @@ All order endpoints require JWT authentication via the `Authorization: Bearer <t
 
 4. **PUT /api/order/[id]** - Update order
    - Can update shipping/billing addresses and payment method
-   - Cannot modify orders that are shipped or completed
+  - **Admin**: Can update any order
+  - **User**: Can only update their own order
    - Returns: Updated order object
 
 5. **POST /api/order/[id]/details** - Add items to existing order
@@ -299,8 +314,9 @@ All order endpoints require JWT authentication via the `Authorization: Bearer <t
        ]
      }
      ```
-   - Adds new items or increases quantity of existing items
-   - Cannot modify shipped or completed orders
+  - **Admin only** endpoint
+  - Adds new items or increases quantity of existing items
+  - Blocks updates for orders already in `Shipping` or `Received`
    - Returns: Added order details
 
 6. **PUT /api/order/[id]/status** - Update order status
@@ -310,7 +326,8 @@ All order endpoints require JWT authentication via the `Authorization: Bearer <t
        "orderStatus": "Shipping"
      }
      ```
-   - Valid statuses: "Ordered" → "Shipping" → "Received"
+  - **Admin only** endpoint
+  - Valid statuses: "Ordered" → "Shipping" → "Received"
    - Enforces status transition rules
    - Returns: Updated order with new status
 
@@ -385,7 +402,7 @@ curl -X PUT http://localhost:3000/api/order/1/status \
 - **Payment Validation**: Verifies billing cards belong to the customer
 - **Status Transitions**: Enforces valid order status changes
 - **Price Calculation**: Automatically calculates sale prices and totals
-- **Order Modification**: Prevents changes to shipped/completed orders
+- **Order Modification**: Admin-only for status and detail item updates
 - **Rich Data**: Includes customer, addresses, billing, products, and shipping info
 
 ## Address API

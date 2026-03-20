@@ -106,6 +106,12 @@ export default function Navigation() {
             >
               Home
             </Link>
+            <Link
+              href="/shopping-cart"
+              className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+            >
+              Shopping Cart
+            </Link>
 
             {/* Product Categories Dropdown */}
             <div className="relative categories-dropdown">
@@ -226,6 +232,13 @@ export default function Navigation() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Home
+              </Link>
+              <Link
+                href="/shopping-cart"
+                className="block text-gray-700 hover:text-blue-600 px-3 py-2 text-base font-medium"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Shopping Cart
               </Link>
 
               {/* Mobile Product Categories Section */}
