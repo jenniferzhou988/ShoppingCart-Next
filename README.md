@@ -295,12 +295,205 @@ curl -X DELETE http://localhost:3000/api/customer/1
 - A customer cannot be deleted if they have billing card information on file
 - When deletion fails due to associations, the response includes a count of associated records
 
+## ProductImage API
+
+The ProductImage API handles images attached to products.
+
+### Endpoints:
+
+1. **GET /api/product-image** - Get all product images
+   - Optional query: `productId=<id>` to filter by product
+   - Returns: Array of product images (with product info)
+
+2. **POST /api/product-image** - Create new product image
+   - Request body:
+     ```json
+     {
+       "productId": 1,
+       "image": "https://cdn.example.com/image.jpg",
+       "createdBy": "admin"
+     }
+     ```
+   - Returns created product image
+
+3. **GET /api/product-image/[id]** - Get specific product image by ID
+   - Returns product image with related product
+   - 404 if not found
+
+4. **DELETE /api/product-image/[id]** - Delete product image by ID
+   - Returns deletion message + deleted record
+   - 404 if not found
+
+### Examples:
+
+```bash
+# Get all product images
+curl http://localhost:3000/api/product-image
+
+# Get images for product 1
+curl "http://localhost:3000/api/product-image?productId=1"
+
+# Create image
+curl -X POST http://localhost:3000/api/product-image \
+  -H "Content-Type: application/json" \
+  -d '{
+    "productId": 1,
+    "image": "https://cdn.example.com/product-1.jpg",
+    "createdBy": "admin"
+  }'
+
+# Get specific image
+curl http://localhost:3000/api/product-image/1
+
+# Delete image
+curl -X DELETE http://localhost:3000/api/product-image/1
+```
+
+## Learn More
+- A customer cannot be deleted if they have associated addresses
+- A customer cannot be deleted if they have any orders
+- A customer cannot be deleted if they have billing card information on file
+- When deletion fails due to associations, the response includes a count of associated records
+
 ### Customer Data Relationships:
 
 - **Addresses**: Customers can have multiple addresses linked through `customerAddresses`
 - **Orders**: Each customer can have multiple orders (shipping and billing addresses)
 - **Billing Cards**: Customers can have multiple billing bank card information stored
 
+## BillingBankCardInfo API
+
+The BillingBankCardInfo API manages stored billing cards in the system.
+
+### Endpoints:
+
+1. **GET /api/billing-bank-card** - Get all billing cards
+   - Returns: Array of card records including customer and billing type
+
+2. **POST /api/billing-bank-card** - Create new billing card record
+   - Request body:
+     ```json
+     {
+       "billingTypeId": 1,
+       "customerId": 1,
+       "cardNumber": "4111111111111111",
+       "expiryMonth": 12,
+       "expiryDate": 2030,
+       "cvw": "123"
+     }
+     ```
+   - Note: `last4Digits` is calculated from `cardNumber` automatically.
+   - Returns: Created billing card record with related customer and type
+
+3. **GET /api/billing-bank-card/[id]** - Get card record by ID
+   - Returns: Card record including customer and billing type
+   - 404 if not found
+
+4. **PUT /api/billing-bank-card/[id]** - Update card record
+   - Request body: partial fields to update (`billingTypeId`, `customerId`, `cardNumber`, `expiryMonth`, `expiryDate`, `cvw`)
+   - Returns: Updated record
+   - 404 if not found
+
+### Examples:
+
+```bash
+# Get all billing cards
+curl http://localhost:3000/api/billing-bank-card
+
+# Get specific billing card
+curl http://localhost:3000/api/billing-bank-card/1
+
+# Update billing card
+curl -X PUT http://localhost:3000/api/billing-bank-card/1 \
+  -H "Content-Type: application/json" \
+  -d '{"expiryMonth": 1, "expiryDate": 2033}'
+```
+
+## ProductCategory API
+
+The ProductCategory API manages categories used to organize products.
+
+### Endpoints:
+
+1. **GET /api/product-category** - Get all categories
+   - Returns: Array of categories including link count
+
+2. **POST /api/product-category** - Create new category
+   - Request body:
+     ```json
+     {
+       "productCategoryName": "string",
+       "description": "string (optional)",
+       "comment": "string (optional)",
+       "createdBy": "string (optional)"
+     }
+     ```
+   - 409 if category name exists
+
+3. **GET /api/product-category/[id]** - Get specific category by ID
+   - 404 if not found
+
+4. **PUT /api/product-category/[id]** - Update category
+   - Request body: partial fields (`productCategoryName`, `description`, `comment`, `modifiedBy`)
+   - 409 if new name conflicts
+
+5. **PATCH /api/product-category/[id]** - Partially update category (same behavior as PUT)
+   - Request body: partial fields (`productCategoryName`, `description`, `comment`, `modifiedBy`)
+   - 409 if new name conflicts
+
+6. **DELETE /api/product-category/[id]** - Delete category
+   - 409 if linked products exist
+   - 404 if not found
+
+### Examples:
+
+```bash
+# Get all categories
+curl http://localhost:3000/api/product-category
+
+# Create category
+curl -X POST http://localhost:3000/api/product-category \
+  -H "Content-Type: application/json" \
+  -d '{
+    "productCategoryName": "Electronics",
+    "description": "Gadgets and devices"
+  }'
+
+# Get category
+curl http://localhost:3000/api/product-category/1
+
+# Update category
+curl -X PUT http://localhost:3000/api/product-category/1 \
+  -H "Content-Type: application/json" \
+  -d '{"description": "Updated description"}'
+
+# Delete category
+curl -X DELETE http://localhost:3000/api/product-category/1
+```
+
+## Learn More
+curl http://localhost:3000/api/billing-bank-card
+
+# Create billing card
+curl -X POST http://localhost:3000/api/billing-bank-card \
+  -H "Content-Type: application/json" \
+  -d '{
+    "billingTypeId": 1,
+    "customerId": 1,
+    "cardNumber": "4111111111111111",
+    "expiryMonth": 12,
+    "expiryDate": 2030,
+    "cvw": "123"
+  }'
+
+# Get specific billing card
+curl http://localhost:3000/api/billing-bank-card/1
+
+# Update billing card
+curl -X PUT http://localhost:3000/api/billing-bank-card/1 \
+  -H "Content-Type: application/json" \
+  -d '{"expiryMonth": 11, "expiryDate": 2031}'
+```
 
 ## Learn More
 
