@@ -32,6 +32,7 @@ export default function ProductsPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [addedProducts, setAddedProducts] = useState<Set<number>>(new Set());
 
   const handleAddToCart = (product: Product) => {
     addShoppingCartItem({
@@ -41,6 +42,7 @@ export default function ProductsPage() {
       salePrice: product.salePrice === null ? null : Number(product.salePrice),
       image: product.productImages[0]?.image ?? null,
     });
+    setAddedProducts((prev) => new Set(prev).add(product.id));
   };
 
   useEffect(() => {
@@ -301,9 +303,14 @@ export default function ProductsPage() {
                 <button
                   type="button"
                   onClick={() => handleAddToCart(product)}
-                  className="w-full mt-2 bg-gray-100 text-gray-800 px-4 py-2 rounded-md text-center hover:bg-gray-200 transition-colors"
+                  disabled={addedProducts.has(product.id)}
+                  className={`w-full mt-2 px-4 py-2 rounded-md text-center transition-colors ${
+                    addedProducts.has(product.id)
+                      ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                  }`}
                 >
-                  Add to Cart
+                  {addedProducts.has(product.id) ? 'Added to Cart' : 'Add to Cart'}
                 </button>
               </div>
             </div>
