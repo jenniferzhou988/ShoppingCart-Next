@@ -6,11 +6,12 @@ import { validateStartup } from "../../../../../lib/startup";
 // POST - Add order details to an existing order
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   validateStartup();
 
   try {
+    const { id } = await params;
     const authHeader = req.headers.get("authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Missing or invalid Authorization header" }, { status: 401 });
@@ -22,8 +23,12 @@ export async function POST(
       return NextResponse.json({ error: "Invalid token or user not found" }, { status: 401 });
     }
 
-    const orderId = parseInt(params.id);
-    if (isNaN(orderId)) {
+    if (user.role !== 'ADMIN') {
+      return NextResponse.json({ error: "Only admin can modify order details" }, { status: 403 });
+    }
+
+    const orderId = Number.parseInt(id, 10);
+    if (Number.isNaN(orderId)) {
       return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
     }
 
@@ -50,22 +55,12 @@ export async function POST(
       );
     }
 
-    // Find customer through user relationship
-    const customer = await prisma.customer.findFirst({
-      where: { user: { id: user.id } },
-    });
-
-    if (!customer) {
-      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
-    }
-
-    // Find order - admins can modify all orders, regular users only their own
+    // Find order
     const order = await prisma.order.findFirst({
-      where: user.role === 'ADMIN'
-        ? { id: orderId }
-        : { id: orderId, customerId: customer.id },
+      where: { id: orderId },
       include: {
         orderDetails: true,
+        orderStatus: true,
       },
     });
 
@@ -112,7 +107,7 @@ export async function POST(
       if (existingDetail) {
         // Update existing detail
         const newQuantity = existingDetail.quantity + quantity;
-        const finalSalePrice = salePrice || product.salePrice || product.price;
+        const finalSalePrice = Number(salePrice ?? product.salePrice ?? product.price);
         const totalPrice = finalSalePrice * newQuantity;
 
         await prisma.orderDetail.update({
@@ -136,7 +131,7 @@ export async function POST(
         }));
       } else {
         // Create new detail
-        const finalSalePrice = salePrice || product.salePrice || product.price;
+        const finalSalePrice = Number(salePrice ?? product.salePrice ?? product.price);
         const totalPrice = finalSalePrice * quantity;
 
         const newDetail = await prisma.orderDetail.create({

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { addShoppingCartItem } from '../../lib/shopping-cart';
 
 interface Product {
   id: number;
@@ -31,6 +32,16 @@ export default function ProductsPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+
+  const handleAddToCart = (product: Product) => {
+    addShoppingCartItem({
+      productId: product.id,
+      productName: product.productName,
+      price: Number(product.price),
+      salePrice: product.salePrice === null ? null : Number(product.salePrice),
+      image: product.productImages[0]?.image ?? null,
+    });
+  };
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -287,6 +298,13 @@ export default function ProductsPage() {
                 >
                   View Details
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => handleAddToCart(product)}
+                  className="w-full mt-2 bg-gray-100 text-gray-800 px-4 py-2 rounded-md text-center hover:bg-gray-200 transition-colors"
+                >
+                  Add to Cart
+                </button>
               </div>
             </div>
           ))}

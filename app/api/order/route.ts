@@ -19,15 +19,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid token or user not found" }, { status: 401 });
     }
 
-    // Find customer through user relationship
-    const customer = await prisma.customer.findFirst({
-      where: { user: { id: user.id } },
-    });
-
-    if (!customer) {
-      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
-    }
-
     let orders;
 
     // If user is admin, get all orders, otherwise get only their orders
@@ -57,6 +48,15 @@ export async function GET(req: NextRequest) {
         orderBy: { created: "desc" },
       });
     } else {
+      const customer = await prisma.customer.findFirst({
+        where: { user: { id: user.id } },
+        select: { id: true },
+      });
+
+      if (!customer) {
+        return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+      }
+
       orders = await prisma.order.findMany({
         where: { customerId: customer.id },
         include: {
@@ -134,9 +134,9 @@ export async function POST(req: NextRequest) {
       }>;
     };
 
-    // Find customer through user relationship
     const customer = await prisma.customer.findFirst({
       where: { user: { id: user.id } },
+      select: { id: true },
     });
 
     if (!customer) {
@@ -206,8 +206,8 @@ export async function POST(req: NextRequest) {
     const order = await prisma.order.create({
       data: {
         customerId: customer.id,
-        shippingAddressId: shippingAddressId,
-        billingAddressId: billingAddressId,
+        shippingAddressId,
+        billingAddressId,
         billingBankCardInfoId: billingBankCardInfoId || null,
         orderStatusId: defaultStatus.id,
         createdBy: user.email,

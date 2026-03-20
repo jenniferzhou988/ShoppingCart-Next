@@ -6,11 +6,12 @@ import { validateStartup } from "../../../../lib/startup";
 // GET - Get specific order by ID
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   validateStartup();
 
   try {
+    const { id } = await params;
     const authHeader = req.headers.get("authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Missing or invalid Authorization header" }, { status: 401 });
@@ -22,25 +23,30 @@ export async function GET(
       return NextResponse.json({ error: "Invalid token or user not found" }, { status: 401 });
     }
 
-    const orderId = parseInt(params.id);
-    if (isNaN(orderId)) {
+    const orderId = Number.parseInt(id, 10);
+    if (Number.isNaN(orderId)) {
       return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
     }
 
-    // Find customer through user relationship
-    const customer = await prisma.customer.findFirst({
-      where: { user: { id: user.id } },
-    });
+    let customerId: number | null = null;
+    if (user.role !== 'ADMIN') {
+      const customer = await prisma.customer.findFirst({
+        where: { user: { id: user.id } },
+        select: { id: true },
+      });
 
-    if (!customer) {
-      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+      if (!customer) {
+        return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+      }
+
+      customerId = customer.id;
     }
 
     // Get order - admins can see all orders, regular users only their own
     const order = await prisma.order.findFirst({
       where: user.role === 'ADMIN'
         ? { id: orderId }
-        : { id: orderId, customerId: customer.id },
+        : { id: orderId, customerId },
       include: {
         customer: true,
         shippingAddress: true,
@@ -82,11 +88,12 @@ export async function GET(
 // PUT - Update order
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   validateStartup();
 
   try {
+    const { id } = await params;
     const authHeader = req.headers.get("authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Missing or invalid Authorization header" }, { status: 401 });
@@ -98,8 +105,8 @@ export async function PUT(
       return NextResponse.json({ error: "Invalid token or user not found" }, { status: 401 });
     }
 
-    const orderId = parseInt(params.id);
-    if (isNaN(orderId)) {
+    const orderId = Number.parseInt(id, 10);
+    if (Number.isNaN(orderId)) {
       return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
     }
 
@@ -121,20 +128,25 @@ export async function PUT(
       billingBankCardInfoId?: number;
     };
 
-    // Find customer through user relationship
-    const customer = await prisma.customer.findFirst({
-      where: { user: { id: user.id } },
-    });
+    let customerId: number | null = null;
+    if (user.role !== 'ADMIN') {
+      const customer = await prisma.customer.findFirst({
+        where: { user: { id: user.id } },
+        select: { id: true },
+      });
 
-    if (!customer) {
-      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+      if (!customer) {
+        return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+      }
+
+      customerId = customer.id;
     }
 
     // Find order - admins can update all orders, regular users only their own
     const existingOrder = await prisma.order.findFirst({
       where: user.role === 'ADMIN'
         ? { id: orderId }
-        : { id: orderId, customerId: customer.id },
+        : { id: orderId, customerId },
     });
 
     if (!existingOrder) {
@@ -143,9 +155,13 @@ export async function PUT(
 
     // Validate addresses if provided
     if (shippingAddressId) {
+      if (!customerId) {
+        return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+      }
+
       const shippingAddress = await prisma.customerAddress.findFirst({
         where: {
-          customerId: customer.id,
+          customerId,
           addressId: shippingAddressId,
         },
       });
@@ -159,9 +175,13 @@ export async function PUT(
     }
 
     if (billingAddressId) {
+      if (!customerId) {
+        return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+      }
+
       const billingAddress = await prisma.customerAddress.findFirst({
         where: {
-          customerId: customer.id,
+          customerId,
           addressId: billingAddressId,
         },
       });
@@ -176,10 +196,14 @@ export async function PUT(
 
     // Validate billing card if provided
     if (billingBankCardInfoId) {
+      if (!customerId) {
+        return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+      }
+
       const billingCard = await prisma.billingBankCardInfo.findFirst({
         where: {
           id: billingBankCardInfoId,
-          customerId: customer.id,
+          customerId,
         },
       });
 

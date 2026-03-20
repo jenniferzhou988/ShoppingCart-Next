@@ -6,11 +6,12 @@ import { validateStartup } from "../../../../../lib/startup";
 // PUT - Update order status
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   validateStartup();
 
   try {
+    const { id } = await params;
     const authHeader = req.headers.get("authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Missing or invalid Authorization header" }, { status: 401 });
@@ -22,8 +23,12 @@ export async function PUT(
       return NextResponse.json({ error: "Invalid token or user not found" }, { status: 401 });
     }
 
-    const orderId = parseInt(params.id);
-    if (isNaN(orderId)) {
+    if (user.role !== 'ADMIN') {
+      return NextResponse.json({ error: "Only admin can update order status" }, { status: 403 });
+    }
+
+    const orderId = Number.parseInt(id, 10);
+    if (Number.isNaN(orderId)) {
       return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
     }
 
@@ -58,20 +63,12 @@ export async function PUT(
       );
     }
 
-    // Find customer through user relationship
-    const customer = await prisma.customer.findFirst({
-      where: { user: { id: user.id } },
-    });
-
-    if (!customer) {
-      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
-    }
-
-    // Find order - admins can update all orders, regular users only their own
+    // Find order
     const order = await prisma.order.findFirst({
-      where: user.role === 'ADMIN'
-        ? { id: orderId }
-        : { id: orderId, customerId: customer.id },
+      where: { id: orderId },
+      include: {
+        orderStatus: true,
+      },
     });
 
     if (!order) {
