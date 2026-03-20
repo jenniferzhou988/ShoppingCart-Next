@@ -71,29 +71,235 @@ curl http://localhost:3000/api/auth/me \
 ```
 
 
-### Created 3 API endpoints:
+## Product API
 
-1. `POST /api/product` - Create new product
+The Product API allows you to manage products in the shopping cart system.
 
-Request body: productName, description, price, salePrice, csdnNumber, createdBy, categoryIds[]
-Returns: Created product with all relationships
-2. `GET /api/product` - Get all products (with optional category filter)
+### Endpoints:
 
--  Query param: ?categoryId=<id> to filter by category
-Returns: Array of products with images, storage, and categories
-3. GET /api/product/[id] - Get single product by ID
+1. **GET /api/product** - Get all products
+   - Query Parameters:
+     - `categoryId` (optional): Filter products by category ID
+   - Returns: Array of products with images, storage, and categories
 
-- Returns: Single product with all relationships
-4. PATCH/PUT /api/product/[id] - Update product
+2. **POST /api/product** - Create new product
+   - Request body:
+     ```json
+     {
+       "productName": "string",
+       "description": "string (optional)",
+       "price": "decimal",
+       "salePrice": "decimal (optional)",
+       "csdnNumber": "string (optional)",
+       "createdBy": "string (optional)",
+       "categoryIds": [1, 2]
+     }
+     ```
+   - Returns: Created product with all relationships
 
-- Request body: Any fields to update (productName, price, salePrice, categoryIds[], etc.)
-- Returns: Updated product
-5. DELETE /api/product/[id] - Delete product
+3. **GET /api/product/[id]** - Get single product by ID
+   - Returns: Single product with all relationships (images, storage, categories)
 
-- Returns: Success message
-GET /api/product/category/[categoryId] - Get all products in a category
+4. **PUT /api/product/[id]** - Update product
+   - Request body: Any fields to update (productName, price, salePrice, categoryIds[], etc.)
+   - Returns: Updated product
 
-- Returns: Category info + array of products + count
+5. **DELETE /api/product/[id]** - Delete product
+   - Returns: Success message
+
+6. **GET /api/product/category/[categoryId]** - Get all products in a category
+   - Returns: Category info + array of products + count
+
+### Examples:
+
+```bash
+# Get all products
+curl http://localhost:3000/api/product
+
+# Get products by category
+curl "http://localhost:3000/api/product?categoryId=1"
+
+# Create a product
+curl -X POST http://localhost:3000/api/product \
+  -H "Content-Type: application/json" \
+  -d '{
+    "productName": "Laptop",
+    "description": "High-performance laptop",
+    "price": 999.99,
+    "salePrice": 799.99,
+    "categoryIds": [1]
+  }'
+
+# Get specific product
+curl http://localhost:3000/api/product/1
+
+# Update product
+curl -X PUT http://localhost:3000/api/product/1 \
+  -H "Content-Type: application/json" \
+  -d '{"price": 899.99}'
+
+# Delete product
+curl -X DELETE http://localhost:3000/api/product/1
+```
+
+## Address API
+
+The Address API allows you to manage customer addresses for shipping and billing purposes.
+
+### Endpoints:
+
+1. **GET /api/address** - Get all addresses
+   - Returns: Array of all addresses (sorted by creation date, newest first)
+
+2. **POST /api/address** - Create new address
+   - Request body:
+     ```json
+     {
+       "streetNumber": "string (required)",
+       "street": "string (required)",
+       "city": "string (required)",
+       "postCode": "string (required)",
+       "province": "string (required)",
+       "country": "string (required)",
+       "createdBy": "string (optional)"
+     }
+     ```
+   - Returns: Created address with ID and timestamps
+
+3. **GET /api/address/[id]** - Get specific address by ID
+   - Returns: Single address object
+   - Returns 404 if address not found
+
+4. **PUT /api/address/[id]** - Update address
+   - Request body: Any fields to update (streetNumber, street, city, postCode, province, country, modifiedBy)
+   - Returns: Updated address
+   - Returns 404 if address not found
+
+5. **DELETE /api/address/[id]** - Delete address
+   - Returns: Success message with deleted address data
+   - Returns 409 if address is associated with orders or customer addresses
+   - Returns 404 if address not found
+
+### Examples:
+
+```bash
+# Get all addresses
+curl http://localhost:3000/api/address
+
+# Create new address
+curl -X POST http://localhost:3000/api/address \
+  -H "Content-Type: application/json" \
+  -d '{
+    "streetNumber": "123",
+    "street": "Main Street",
+    "city": "New York",
+    "postCode": "10001",
+    "province": "NY",
+    "country": "USA",
+    "createdBy": "admin"
+  }'
+
+# Get specific address
+curl http://localhost:3000/api/address/1
+
+# Update address
+curl -X PUT http://localhost:3000/api/address/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "street": "Main Street North",
+    "modifiedBy": "admin"
+  }'
+
+# Delete address
+curl -X DELETE http://localhost:3000/api/address/1
+```
+
+### Address Deletion Rules:
+
+- An address cannot be deleted if it is associated with any orders (as shipping or billing address)
+- An address cannot be deleted if it is linked to any customer addresses
+- When deletion fails due to associations, the response includes a count of associated records
+
+## Customer API
+
+The Customer API allows you to manage customer information including personal details and associated addresses, orders, and billing information.
+
+### Endpoints:
+
+1. **GET /api/customer** - Get all customers
+   - Returns: Array of all customers with their addresses, orders, and billing card information (sorted by creation date, newest first)
+
+2. **POST /api/customer** - Create new customer
+   - Request body:
+     ```json
+     {
+       "firstName": "string (required)",
+       "middleName": "string (optional)",
+       "lastName": "string (required)",
+       "primaryPhone": "string (required)",
+       "secondPhone": "string (optional)"
+     }
+     ```
+   - Returns: Created customer with ID, timestamps, and related data
+
+3. **GET /api/customer/[id]** - Get specific customer by ID
+   - Returns: Single customer object with all relationships (addresses, orders, billing info)
+   - Returns 404 if customer not found
+
+4. **PUT /api/customer/[id]** - Update customer
+   - Request body: Any fields to update (firstName, middleName, lastName, primaryPhone, secondPhone)
+   - Returns: Updated customer with all relationships
+   - Returns 404 if customer not found
+
+5. **DELETE /api/customer/[id]** - Delete customer
+   - Returns: Success message with deleted customer data
+   - Returns 409 if customer has associated addresses, orders, or billing card information
+   - Returns 404 if customer not found
+
+### Examples:
+
+```bash
+# Get all customers
+curl http://localhost:3000/api/customer
+
+# Create new customer
+curl -X POST http://localhost:3000/api/customer \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "John",
+    "middleName": "Michael",
+    "lastName": "Doe",
+    "primaryPhone": "+1-555-0123",
+    "secondPhone": "+1-555-0124"
+  }'
+
+# Get specific customer
+curl http://localhost:3000/api/customer/1
+
+# Update customer
+curl -X PUT http://localhost:3000/api/customer/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "Jane",
+    "primaryPhone": "+1-555-0199"
+  }'
+
+# Delete customer
+curl -X DELETE http://localhost:3000/api/customer/1
+```
+
+### Customer Deletion Rules:
+
+- A customer cannot be deleted if they have associated addresses
+- A customer cannot be deleted if they have any orders
+- A customer cannot be deleted if they have billing card information on file
+- When deletion fails due to associations, the response includes a count of associated records
+
+### Customer Data Relationships:
+
+- **Addresses**: Customers can have multiple addresses linked through `customerAddresses`
+- **Orders**: Each customer can have multiple orders (shipping and billing addresses)
+- **Billing Cards**: Customers can have multiple billing bank card information stored
 
 
 ## Learn More
