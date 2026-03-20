@@ -538,6 +538,54 @@ curl -X PATCH http://localhost:3000/api/product-storage/1 -H "Content-Type: appl
 curl -X DELETE http://localhost:3000/api/product-storage/1
 ```
 
+## Admin Interface
+
+The application includes a comprehensive admin interface for managing products, categories, inventory, and related data. Access to admin features requires authentication with admin role privileges.
+
+### Main Page Navigation
+
+- **Admin Panel Button**: Available on the home page (`/`) for users with admin role
+- Provides direct access to product management functionality
+
+### Admin Pages Structure
+
+The admin interface is organized into two main sections:
+
+#### 1. Product Management (`/admin`)
+- **Product CRUD**: Create, read, update, and delete products
+- **Category Management**: Manage product categories with CRUD operations
+- **Product Images**: Add and remove product images
+- **Navigation**: 
+  - "← Home" button to return to main page
+  - "Inventory Management →" button to access inventory features
+
+#### 2. Inventory Management (`/admin/inventory`)
+- **Product Imports**: Track inventory imports with price and quantity
+- **Product Storage**: Monitor current stock levels
+- **Import Logic**: When creating imports, automatically:
+  - Creates new storage record if product has no existing stock
+  - Updates existing storage by adding import quantity to current stock
+- **Navigation**:
+  - "← Home" button to return to main page
+  - "← Product Management" button to access product features
+
+### Navigation Flow
+
+```
+Home Page (/)
+├── Admin Panel → Product Management (/admin)
+│   ├── Home (/)
+│   └── Inventory Management → (/admin/inventory)
+│       ├── Home (/)
+│       └── Product Management (/)
+```
+
+### Admin Access Requirements
+
+- Users must be authenticated and have `role: 'admin'` to access admin pages
+- Non-admin users see "Access denied" message on admin routes
+- Admin role is assigned during user registration or updated by database administrators
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

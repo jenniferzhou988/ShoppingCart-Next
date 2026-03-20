@@ -274,35 +274,39 @@ export default function AdminProductManagePage() {
     }
   };
 
-  const adjustStorageForImport = async (productId: number, quantity: number) => {
+  const adjustStorageForImport = async (productId: number, importQuantity: number) => {
     try {
-      const existing = productStorages.find((s) => s.productId === productId);
-      if (existing) {
-        const newQuantity = (existing.quantity ?? 0) + quantity;
-        const res = await fetch(`/api/product-storage/${existing.id}`, {
+      const existingStorage = productStorages.find((s) => s.productId === productId);
+      if (existingStorage) {
+        // ProductStorage exists: update quantity = existing + import quantity
+        const newQuantity = (existingStorage.quantity ?? 0) + importQuantity;
+        const res = await fetch(`/api/product-storage/${existingStorage.id}`, {
           method: 'PATCH',
           headers: jsonHeaders,
           body: JSON.stringify({ quantity: newQuantity, modifiedBy: importForm.createdBy ?? 'system' }),
         });
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data?.error || 'Failed to update storage');
+          throw new Error(data?.error || 'Failed to update existing storage quantity');
         }
+        console.log(`Updated storage for product ${productId}: ${existingStorage.quantity} + ${importQuantity} = ${newQuantity}`);
       } else {
+        // ProductStorage doesn't exist: create new with import quantity
         const res = await fetch('/api/product-storage', {
           method: 'POST',
           headers: jsonHeaders,
-          body: JSON.stringify({ productId, quantity, createdBy: importForm.createdBy ?? 'system' }),
+          body: JSON.stringify({ productId, quantity: importQuantity, createdBy: importForm.createdBy ?? 'system' }),
         });
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data?.error || 'Failed to create storage');
+          throw new Error(data?.error || 'Failed to create new storage entry');
         }
+        console.log(`Created new storage for product ${productId} with quantity ${importQuantity}`);
       }
-      await fetchData();
+      await fetchData(); // Refresh all data including updated storage
     } catch (err) {
-      console.error('Error adjusting storage from import', err);
-      setError(err instanceof Error ? err.message : 'Storage adjustment failed');
+      console.error('Error adjusting storage from import:', err);
+      setError(err instanceof Error ? err.message : 'Storage adjustment failed from import');
     }
   };
 
@@ -331,8 +335,11 @@ export default function AdminProductManagePage() {
 
       const created = await res.json();
       setMessage('Product import created successfully');
-      setImportForm({ productId: 0, priceIn: '', quantity: '', createdBy: '' });
+
+      // Adjust storage: check if exists, if not create with import quantity, otherwise add to existing
       await adjustStorageForImport(created.productId, Number(created.quantity));
+
+      setImportForm({ productId: 0, priceIn: '', quantity: '', createdBy: '' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error creating product import');
     }
@@ -393,7 +400,23 @@ export default function AdminProductManagePage() {
   return (
     <div className="p-6 space-y-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="max-w-6xl mx-auto space-y-4">
-        <h1 className="text-2xl font-bold">Product Management (Admin)</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Product Management (Admin)</h1>
+          <div className="flex gap-4">
+            <a
+              href="/"
+              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+            >
+              ← Home
+            </a>
+            <a
+              href="/admin/inventory"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Inventory Management →
+            </a>
+          </div>
+        </div>
         {message && <div className="rounded-md bg-green-50 p-3 text-green-800">{message}</div>}
         {error && <div className="rounded-md bg-red-50 p-3 text-red-800">{error}</div>}
 
