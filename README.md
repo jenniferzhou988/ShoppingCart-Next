@@ -39,6 +39,27 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Navigation & Categories
+
+The application features a responsive navigation menu that dynamically displays product categories fetched from the database. Key features include:
+
+### Navigation Menu
+- **Responsive Design**: Desktop navigation with dropdown categories, mobile hamburger menu
+- **Dynamic Categories**: Product categories are automatically loaded from the database
+- **Authentication Links**: Login/Register buttons for unauthenticated users
+- **User Dashboard**: Authenticated users see personalized options and logout functionality
+
+### Category Pages
+- **Category Listing**: `/category/[id]` - Browse products within specific categories
+- **Product Grid**: Responsive grid layout with product images, pricing, and stock status
+- **Category Navigation**: Click category tags to navigate between related categories
+
+### Product Browsing
+- **All Products Page**: `/products` - Complete product catalog with search and filtering
+- **Search Functionality**: Real-time search across product names and descriptions
+- **Category Filtering**: Filter products by selected categories
+- **Product Details**: Individual product pages with full information
+
 ## REST API (JWT Authentication)
 
 The app exposes a small RESTful auth API under `/api/auth`:
@@ -265,7 +286,7 @@ All order endpoints require JWT authentication via the `Authorization: Bearer <t
    - Cannot modify orders that are shipped or completed
    - Returns: Updated order object
 
-5. **POST /api/order/[orderId]/details** - Add items to existing order
+5. **POST /api/order/[id]/details** - Add items to existing order
    - Request body:
      ```json
      {
@@ -282,7 +303,7 @@ All order endpoints require JWT authentication via the `Authorization: Bearer <t
    - Cannot modify shipped or completed orders
    - Returns: Added order details
 
-6. **PUT /api/order/[orderId]/status** - Update order status
+6. **PUT /api/order/[id]/status** - Update order status
    - Request body:
      ```json
      {
