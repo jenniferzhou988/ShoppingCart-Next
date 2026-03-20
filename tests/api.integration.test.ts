@@ -6,6 +6,11 @@ import * as productByIdHandlers from '../app/api/product/[id]/route';
 import * as productCategoryHandlers from '../app/api/product-category/route';
 import * as productCategoryByIdHandlers from '../app/api/product-category/[id]/route';
 import * as productImageHandlers from '../app/api/product-image/route';
+import * as productImageByIdHandlers from '../app/api/product-image/[id]/route';
+import * as productImportHandlers from '../app/api/product-import/route';
+import * as productImportByIdHandlers from '../app/api/product-import/[id]/route';
+import * as productStorageHandlers from '../app/api/product-storage/route';
+import * as productStorageByIdHandlers from '../app/api/product-storage/[id]/route';
 import * as registerHandlers from '../app/api/auth/register/route';
 import * as loginHandlers from '../app/api/auth/login/route';
 import * as meHandlers from '../app/api/auth/me/route';
@@ -182,13 +187,13 @@ describe('API integration tests', () => {
     expect(productDetails.productCategoryLinks?.some((link: any) => link.productCategory?.id === category.id)).toBe(true);
     expect(productDetails.productImages?.some((img: any) => img.id === productImageId)).toBe(true);
 
-    const delImageRes = await productImageHandlers.DELETE(
+    const delImageRes = await productImageByIdHandlers.DELETE(
       makeJsonRequest('http://test.local/api/product-image/' + productImageId, 'DELETE'),
       { params: { id: String(productImageId) } }
     );
     expect(delImageRes.status).toBe(200);
 
-    const delProductRes = await productHandlers.DELETE(
+    const delProductRes = await productByIdHandlers.DELETE(
       makeJsonRequest('http://test.local/api/product/' + productId, 'DELETE')
     );
     expect(delProductRes.status).toBe(200);
@@ -197,5 +202,104 @@ describe('API integration tests', () => {
 
     productId = 0;
     productImageId = 0;
+  });
+
+  it('should create, update, and delete product-import', async () => {
+    const category = await prisma.productCategory.create({ data: { productCategoryName: `product-import-cat-${Date.now()}`, description: 'temp' } });
+
+    const product = await prisma.product.create({
+      data: {
+        productName: `import-product-${Date.now()}`,
+        price: 12.5,
+        productCategoryLinks: { create: { productCategoryId: category.id } },
+      },
+    });
+
+    const createRes = await productImportHandlers.POST(
+      makeJsonRequest('http://test.local/api/product-import', 'POST', {
+        productId: product.id,
+        priceIn: 9.99,
+        quantity: 20,
+        createdBy: 'tester',
+      })
+    );
+    expect(createRes.status).toBe(201);
+    const created = await createRes.json();
+    expect(created.productId).toBe(product.id);
+
+    const getRes = await productImportByIdHandlers.GET(
+      makeJsonRequest('http://test.local/api/product-import/' + created.id),
+      { params: { id: String(created.id) } }
+    );
+    expect(getRes.status).toBe(200);
+
+    const updateRes = await productImportByIdHandlers.PATCH(
+      makeJsonRequest('http://test.local/api/product-import/' + created.id, 'PATCH', {
+        quantity: 30,
+        modifiedBy: 'tester2',
+      }),
+      { params: { id: String(created.id) } }
+    );
+    expect(updateRes.status).toBe(200);
+    const updated = await updateRes.json();
+    expect(updated.quantity).toBe(30);
+
+    const deleteRes = await productImportByIdHandlers.DELETE(
+      makeJsonRequest('http://test.local/api/product-import/' + created.id, 'DELETE'),
+      { params: { id: String(created.id) } }
+    );
+    expect(deleteRes.status).toBe(200);
+
+    await prisma.product.delete({ where: { id: product.id } });
+    await prisma.productCategory.delete({ where: { id: category.id } });
+  });
+
+  it('should create, update, and delete product-storage', async () => {
+    const category = await prisma.productCategory.create({ data: { productCategoryName: `product-storage-cat-${Date.now()}`, description: 'temp' } });
+
+    const product = await prisma.product.create({
+      data: {
+        productName: `storage-product-${Date.now()}`,
+        price: 15.75,
+        productCategoryLinks: { create: { productCategoryId: category.id } },
+      },
+    });
+
+    const createRes = await productStorageHandlers.POST(
+      makeJsonRequest('http://test.local/api/product-storage', 'POST', {
+        productId: product.id,
+        quantity: 42,
+        createdBy: 'tester',
+      })
+    );
+    expect(createRes.status).toBe(201);
+    const created = await createRes.json();
+    expect(created.productId).toBe(product.id);
+
+    const getRes = await productStorageByIdHandlers.GET(
+      makeJsonRequest('http://test.local/api/product-storage/' + created.id),
+      { params: { id: String(created.id) } }
+    );
+    expect(getRes.status).toBe(200);
+
+    const updateRes = await productStorageByIdHandlers.PATCH(
+      makeJsonRequest('http://test.local/api/product-storage/' + created.id, 'PATCH', {
+        quantity: 55,
+        modifiedBy: 'tester2',
+      }),
+      { params: { id: String(created.id) } }
+    );
+    expect(updateRes.status).toBe(200);
+    const updated = await updateRes.json();
+    expect(updated.quantity).toBe(55);
+
+    const deleteRes = await productStorageByIdHandlers.DELETE(
+      makeJsonRequest('http://test.local/api/product-storage/' + created.id, 'DELETE'),
+      { params: { id: String(created.id) } }
+    );
+    expect(deleteRes.status).toBe(200);
+
+    await prisma.product.delete({ where: { id: product.id } });
+    await prisma.productCategory.delete({ where: { id: category.id } });
   });
 });

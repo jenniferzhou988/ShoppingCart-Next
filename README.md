@@ -471,28 +471,71 @@ curl -X PUT http://localhost:3000/api/product-category/1 \
 curl -X DELETE http://localhost:3000/api/product-category/1
 ```
 
-## Learn More
-curl http://localhost:3000/api/billing-bank-card
+## ProductImport API
 
-# Create billing card
-curl -X POST http://localhost:3000/api/billing-bank-card \
+The ProductImport API tracks inventory imports and updates product stock via admin import workflow.
+
+### Endpoints:
+
+1. **GET /api/product-import** - get all import records
+2. **POST /api/product-import** - create a new import entry
+   - Request body:
+     ```json
+     {
+       "productId": 1,
+       "priceIn": 20.5,
+       "quantity": 100,
+       "createdBy": "admin"
+     }
+     ```
+3. **GET /api/product-import/[id]** - get a import entry by ID
+4. **PATCH /api/product-import/[id]** - update an import entry (partial)
+5. **PUT /api/product-import/[id]** - alias for PATCH
+6. **DELETE /api/product-import/[id]** - delete import entry
+
+### Examples:
+
+```bash
+curl http://localhost:3000/api/product-import
+curl -X POST http://localhost:3000/api/product-import \
   -H "Content-Type: application/json" \
-  -d '{
-    "billingTypeId": 1,
-    "customerId": 1,
-    "cardNumber": "4111111111111111",
-    "expiryMonth": 12,
-    "expiryDate": 2030,
-    "cvw": "123"
-  }'
+  -d '{"productId":1,"priceIn":20.5,"quantity":100}'
+curl http://localhost:3000/api/product-import/1
+curl -X PATCH http://localhost:3000/api/product-import/1 -H "Content-Type: application/json" -d '{"quantity":120}'
+curl -X DELETE http://localhost:3000/api/product-import/1
+```
 
-# Get specific billing card
-curl http://localhost:3000/api/billing-bank-card/1
+## ProductStorage API
 
-# Update billing card
-curl -X PUT http://localhost:3000/api/billing-bank-card/1 \
+The ProductStorage API tracks actual product stock quantity. Admin import logic adjusts existing storage or creates it.
+
+### Endpoints:
+
+1. **GET /api/product-storage** - get all storage entries
+2. **POST /api/product-storage** - create storage record
+   - Request body:
+     ```json
+     {
+       "productId": 1,
+       "quantity": 100,
+       "createdBy": "admin"
+     }
+     ```
+3. **GET /api/product-storage/[id]** - get specific storage entry
+4. **PATCH /api/product-storage/[id]** - update storage quantity / product links
+5. **PUT /api/product-storage/[id]** - alias for PATCH
+6. **DELETE /api/product-storage/[id]** - delete storage record
+
+### Examples:
+
+```bash
+curl http://localhost:3000/api/product-storage
+curl -X POST http://localhost:3000/api/product-storage \
   -H "Content-Type: application/json" \
-  -d '{"expiryMonth": 11, "expiryDate": 2031}'
+  -d '{"productId":1,"quantity":100}'
+curl http://localhost:3000/api/product-storage/1
+curl -X PATCH http://localhost:3000/api/product-storage/1 -H "Content-Type: application/json" -d '{"quantity":150}'
+curl -X DELETE http://localhost:3000/api/product-storage/1
 ```
 
 ## Learn More
