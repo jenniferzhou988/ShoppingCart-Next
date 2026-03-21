@@ -35,6 +35,7 @@ export default function ProductItemPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   const handleAddToCart = () => {
     if (!product) {
@@ -48,6 +49,7 @@ export default function ProductItemPage() {
       salePrice: product.salePrice === null ? null : Number(product.salePrice),
       image: product.productImages[0]?.image ?? null,
     });
+    setAddedToCart(true);
   };
 
   useEffect(() => {
@@ -265,9 +267,14 @@ export default function ProductItemPage() {
             <button
               type="button"
               onClick={handleAddToCart}
-              className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors"
+              disabled={addedToCart}
+              className={`px-6 py-3 rounded-md transition-colors ${
+                addedToCart
+                  ? 'bg-green-500 text-white cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
             >
-              Add to Cart
+              {addedToCart ? 'Added to Cart' : 'Add to Cart'}
             </button>
             <Link
               href="/shopping-cart"
