@@ -50,6 +50,7 @@ export function saveShoppingCartItems(items: ShoppingCartItem[]) {
   }
 
   globalThis.localStorage.setItem(SHOPPING_CART_STORAGE_KEY, JSON.stringify(items));
+  globalThis.window?.dispatchEvent(new CustomEvent('cart-change'));
 }
 
 export function addShoppingCartItem(item: Omit<ShoppingCartItem, 'quantity'>, quantity = 1) {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getAuthState, logout, type AuthState } from '../lib/auth-client';
+import { getShoppingCartItems } from '../lib/shopping-cart';
 
 interface ProductCategory {
   id: number;
@@ -18,6 +19,7 @@ export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [authState, setAuthState] = useState<AuthState>({ token: null, user: null, isAuthenticated: false });
+  const [cartItemCount, setCartItemCount] = useState(0);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -38,9 +40,27 @@ export default function Navigation() {
     fetchCategories();
   }, []);
 
-  // Initialize auth state
+  // Initialize auth state and keep in sync
   useEffect(() => {
-    setAuthState(getAuthState());
+    const refreshAuth = () => setAuthState(getAuthState());
+    refreshAuth();
+    globalThis.addEventListener('auth-change', refreshAuth);
+    return () => globalThis.removeEventListener('auth-change', refreshAuth);
+  }, []);
+
+  // Track cart item count
+  useEffect(() => {
+    const refreshCart = () => {
+      const items = getShoppingCartItems();
+      setCartItemCount(items.reduce((sum, i) => sum + i.quantity, 0));
+    };
+    refreshCart();
+    globalThis.addEventListener('cart-change', refreshCart);
+    globalThis.addEventListener('storage', refreshCart);
+    return () => {
+      globalThis.removeEventListener('cart-change', refreshCart);
+      globalThis.removeEventListener('storage', refreshCart);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -64,19 +84,17 @@ export default function Navigation() {
 
   if (loading) {
     return (
-      <nav className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/" className="text-xl font-bold text-gray-900">
+      <nav className="navbar navbar-expand-md bg-white border-bottom shadow-sm">
+        <div className="container">
+          <div className="navbar-brand fw-bold text-dark mb-0">
+            <Link href="/" className="text-decoration-none text-dark">
                 ShoppingCart
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="animate-pulse bg-gray-200 h-8 w-20 rounded"></div>
-              <div className="animate-pulse bg-gray-200 h-8 w-20 rounded"></div>
-              <div className="animate-pulse bg-gray-200 h-8 w-20 rounded"></div>
-            </div>
+            </Link>
+          </div>
+          <div className="d-flex gap-2">
+            <span className="placeholder col-3 bg-secondary-subtle rounded" style={{ width: '5rem', height: '2rem' }}></span>
+            <span className="placeholder col-3 bg-secondary-subtle rounded" style={{ width: '5rem', height: '2rem' }}></span>
+            <span className="placeholder col-3 bg-secondary-subtle rounded" style={{ width: '5rem', height: '2rem' }}></span>
           </div>
         </div>
       </nav>
@@ -88,235 +106,140 @@ export default function Navigation() {
   }
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center">
-            <Link href="/" className="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors">
-              ShoppingCart
-            </Link>
-          </div>
+    <nav className="navbar navbar-expand-md bg-white border-bottom shadow-sm py-2">
+      <div className="container">
+        <Link href="/" className="navbar-brand fw-bold text-dark d-flex align-items-center gap-2">
+          <i className="bi bi-cart4"></i>
+          {' '}
+          ShoppingCart
+        </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <Link
-              href="/"
-              className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
-            >
-              Home
-            </Link>
-            <Link
-              href="/shopping-cart"
-              className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
-            >
-              Shopping Cart
-            </Link>
+        <button
+          type="button"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="navbar-toggler"
+          aria-label="Toggle menu"
+          aria-expanded={isMenuOpen}
+        >
+          <i className={`bi ${isMenuOpen ? 'bi-x-lg' : 'bi-list'}`}></i>
+        </button>
 
-            {/* Product Categories Dropdown */}
-            <div className="relative categories-dropdown">
+        <div className={`collapse navbar-collapse ${isMenuOpen ? 'show' : ''}`}>
+          <ul className="navbar-nav me-auto mb-2 mb-md-0">
+            <li className="nav-item">
+              <Link
+                href="/"
+                className="nav-link d-flex align-items-center gap-1"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <i className="bi bi-house-door"></i>
+                {' '}
+                Home
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link
+                href="/shopping-cart"
+                className="nav-link d-flex align-items-center gap-1 position-relative"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <i className="bi bi-basket3"></i>
+                {' '}
+                Shopping Cart
+                {cartItemCount > 0 && (
+                  <span
+                    className="badge rounded-pill bg-danger ms-1"
+                    style={{ fontSize: '0.65rem' }}
+                  >
+                    {cartItemCount}
+                  </span>
+                )}
+              </Link>
+            </li>
+
+            <li className="nav-item dropdown categories-dropdown">
               <button
+                type="button"
                 onMouseEnter={() => setIsCategoriesOpen(true)}
                 onMouseLeave={() => setIsCategoriesOpen(false)}
                 onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
-                className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors flex items-center space-x-1"
+                className="nav-link dropdown-toggle btn btn-link text-decoration-none"
                 aria-haspopup="true"
                 aria-expanded={isCategoriesOpen}
               >
-                <span>Categories</span>
-                <svg
-                  className={`h-4 w-4 transition-transform ${isCategoriesOpen ? 'rotate-180' : ''}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <i className="bi bi-grid-3x3-gap me-1"></i>
+                {' '}
+                Categories
               </button>
 
-              {/* Dropdown Menu */}
               {isCategoriesOpen && (
-                <div
-                  className="absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50"
+                <ul
+                  className="dropdown-menu show"
                   onMouseEnter={() => setIsCategoriesOpen(true)}
                   onMouseLeave={() => setIsCategoriesOpen(false)}
                 >
-                  <div className="py-1">
-                    {categories.map((category) => (
+                  {categories.map((category) => (
+                    <li key={category.id}>
                       <Link
-                        key={category.id}
                         href={`/category/${category.id}`}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600 capitalize transition-colors"
+                        className="dropdown-item text-capitalize"
                         title={category.description || category.productCategoryName}
-                        onClick={() => setIsCategoriesOpen(false)}
+                        onClick={() => {
+                          setIsCategoriesOpen(false);
+                          setIsMenuOpen(false);
+                        }}
                       >
                         {category.productCategoryName}
                       </Link>
-                    ))}
-                    {categories.length === 0 && (
-                      <div className="px-4 py-2 text-sm text-gray-500">
-                        No categories available
-                      </div>
-                    )}
-                  </div>
-                </div>
+                    </li>
+                  ))}
+                  {categories.length === 0 && (
+                    <li>
+                      <span className="dropdown-item-text text-muted">No categories available</span>
+                    </li>
+                  )}
+                </ul>
               )}
-            </div>
+            </li>
+          </ul>
 
-            {/* Auth Links */}
+          <div className="d-flex flex-column flex-md-row gap-2">
             {authState.isAuthenticated ? (
               <button
-                onClick={handleLogout}
-                className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+                onClick={() => {
+                  handleLogout();
+                  setIsMenuOpen(false);
+                }}
+                className="btn btn-outline-danger btn-sm btn-app"
               >
+                <i className="bi bi-box-arrow-right me-1"></i>
+                {' '}
                 Logout
               </button>
             ) : (
               <>
                 <Link
                   href="/login"
-                  className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+                  className="btn btn-outline-primary btn-sm btn-app"
+                  onClick={() => setIsMenuOpen(false)}
                 >
-                  Login
+                  <i className="bi bi-box-arrow-in-right me-1"></i>
+                  {' '}
+                  Sign In
                 </Link>
                 <Link
                   href="/register"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+                  className="btn btn-primary btn-sm btn-app"
+                  onClick={() => setIsMenuOpen(false)}
                 >
+                  <i className="bi bi-person-plus me-1"></i>
+                  {' '}
                   Sign Up
                 </Link>
               </>
             )}
           </div>
-
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-gray-700 hover:text-blue-600 p-2"
-              aria-label="Toggle menu"
-            >
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                {isMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
-            </button>
-          </div>
         </div>
-
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-200">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              <Link
-                href="/"
-                className="block text-gray-700 hover:text-blue-600 px-3 py-2 text-base font-medium"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Home
-              </Link>
-              <Link
-                href="/shopping-cart"
-                className="block text-gray-700 hover:text-blue-600 px-3 py-2 text-base font-medium"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Shopping Cart
-              </Link>
-
-              {/* Mobile Product Categories Section */}
-              <div className="border-t border-gray-100 pt-2 mt-2">
-                <button
-                  onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
-                  className="flex items-center justify-between w-full text-gray-700 hover:text-blue-600 px-3 py-2 text-base font-medium"
-                  aria-expanded={isCategoriesOpen}
-                >
-                  <span>Categories</span>
-                  <svg
-                    className={`h-5 w-5 transition-transform ${isCategoriesOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {isCategoriesOpen && (
-                  <div className="ml-4 mt-1 space-y-1">
-                    {categories.map((category) => (
-                      <Link
-                        key={category.id}
-                        href={`/category/${category.id}`}
-                        className="block text-gray-600 hover:text-blue-600 px-3 py-2 text-sm font-medium capitalize"
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          setIsCategoriesOpen(false);
-                        }}
-                        title={category.description || category.productCategoryName}
-                      >
-                        {category.productCategoryName}
-                      </Link>
-                    ))}
-                    {categories.length === 0 && (
-                      <div className="px-3 py-2 text-sm text-gray-500">
-                        No categories available
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="border-t border-gray-200 pt-2 mt-2">
-                {authState.isAuthenticated ? (
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setIsMenuOpen(false);
-                    }}
-                    className="block w-full text-left text-gray-700 hover:text-blue-600 px-3 py-2 text-base font-medium"
-                  >
-                    Logout
-                  </button>
-                ) : (
-                  <>
-                    <Link
-                      href="/login"
-                      className="block text-gray-700 hover:text-blue-600 px-3 py-2 text-base font-medium"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      href="/register"
-                      className="block bg-blue-600 text-white px-3 py-2 text-base font-medium rounded-md mt-1"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Sign Up
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </nav>
   );

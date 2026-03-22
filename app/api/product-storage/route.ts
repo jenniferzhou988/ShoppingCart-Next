@@ -27,11 +27,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { productId, quantity, createdBy, modifiedBy } = body as {
+    const { productId, quantity } = body as {
       productId?: number;
       quantity?: number;
-      createdBy?: string;
-      modifiedBy?: string;
     };
 
     if (!productId || quantity === undefined) {
@@ -47,8 +45,6 @@ export async function POST(req: NextRequest) {
       data: {
         product: { connect: { id: productId } },
         quantity,
-        createdBy,
-        modifiedBy,
       },
       include: { product: true },
     });

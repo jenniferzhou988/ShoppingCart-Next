@@ -3,16 +3,17 @@ import { prisma } from "../../../../lib/prisma";
 import { validateStartup } from "../../../../lib/startup";
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export async function GET(req: NextRequest, { params }: RouteParams) {
   validateStartup();
 
   try {
-    const id = Number.parseInt(params.id, 10);
+    const { id: idParam } = await params;
+    const id = Number.parseInt(idParam, 10);
     if (Number.isNaN(id)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
@@ -37,7 +38,8 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   validateStartup();
 
   try {
-    const id = Number.parseInt(params.id, 10);
+    const { id: idParam } = await params;
+    const id = Number.parseInt(idParam, 10);
     if (Number.isNaN(id)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }

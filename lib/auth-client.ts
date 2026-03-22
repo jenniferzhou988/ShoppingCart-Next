@@ -52,6 +52,7 @@ export function setAuthState(token: string, user: User): void {
     localStorage.setItem(AUTH_TOKEN_KEY, token);
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
     localStorage.setItem(AUTH_IS_AUTHENTICATED_KEY, 'true');
+    window.dispatchEvent(new CustomEvent('auth-change'));
   } catch (error) {
     console.error('Error saving auth state to localStorage:', error);
   }
@@ -65,6 +66,7 @@ export function clearAuthState(): void {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_USER_KEY);
     localStorage.removeItem(AUTH_IS_AUTHENTICATED_KEY);
+    window.dispatchEvent(new CustomEvent('auth-change'));
   } catch (error) {
     console.error('Error clearing auth state from localStorage:', error);
   }

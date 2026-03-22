@@ -48,17 +48,12 @@ export async function GET(req: NextRequest) {
         orderBy: { created: "desc" },
       });
     } else {
-      const customer = await prisma.customer.findFirst({
-        where: { user: { id: user.id } },
-        select: { id: true },
-      });
-
-      if (!customer) {
+      if (!user.customerId) {
         return NextResponse.json({ error: "Customer not found" }, { status: 404 });
       }
 
       orders = await prisma.order.findMany({
-        where: { customerId: customer.id },
+        where: { customerId: user.customerId },
         include: {
           customer: true,
           shippingAddress: true,
@@ -134,12 +129,7 @@ export async function POST(req: NextRequest) {
       }>;
     };
 
-    const customer = await prisma.customer.findFirst({
-      where: { user: { id: user.id } },
-      select: { id: true },
-    });
-
-    if (!customer) {
+    if (!user.customerId) {
       return NextResponse.json({ error: "Customer not found" }, { status: 404 });
     }
 
@@ -154,14 +144,14 @@ export async function POST(req: NextRequest) {
     // Validate addresses exist and belong to customer
     const shippingAddress = await prisma.customerAddress.findFirst({
       where: {
-        customerId: customer.id,
+        customerId: user.customerId,
         addressId: shippingAddressId,
       },
     });
 
     const billingAddress = await prisma.customerAddress.findFirst({
       where: {
-        customerId: customer.id,
+        customerId: user.customerId,
         addressId: billingAddressId,
       },
     });
@@ -178,7 +168,7 @@ export async function POST(req: NextRequest) {
       const billingCard = await prisma.billingBankCardInfo.findFirst({
         where: {
           id: billingBankCardInfoId,
-          customerId: customer.id,
+          customerId: user.customerId,
         },
       });
 
@@ -205,7 +195,7 @@ export async function POST(req: NextRequest) {
     // Create order with details
     const order = await prisma.order.create({
       data: {
-        customerId: customer.id,
+        customerId: user.customerId,
         shippingAddressId,
         billingAddressId,
         billingBankCardInfoId: billingBankCardInfoId || null,
@@ -250,7 +240,7 @@ export async function POST(req: NextRequest) {
         });
 
         if (product) {
-          const salePrice = product.salePrice || product.price;
+          const salePrice = Number(product.salePrice ?? product.price);
           const totalPrice = salePrice * detail.quantity;
 
           await prisma.orderDetail.update({

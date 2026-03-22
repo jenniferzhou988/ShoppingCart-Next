@@ -30,23 +30,17 @@ export async function GET(
 
     let customerId: number | null = null;
     if (user.role !== 'ADMIN') {
-      const customer = await prisma.customer.findFirst({
-        where: { user: { id: user.id } },
-        select: { id: true },
-      });
-
-      if (!customer) {
+      if (!user.customerId) {
         return NextResponse.json({ error: "Customer not found" }, { status: 404 });
       }
-
-      customerId = customer.id;
+      customerId = user.customerId;
     }
 
     // Get order - admins can see all orders, regular users only their own
     const order = await prisma.order.findFirst({
       where: user.role === 'ADMIN'
         ? { id: orderId }
-        : { id: orderId, customerId },
+        : { id: orderId, customerId: customerId! },
       include: {
         customer: true,
         shippingAddress: true,
@@ -130,23 +124,17 @@ export async function PUT(
 
     let customerId: number | null = null;
     if (user.role !== 'ADMIN') {
-      const customer = await prisma.customer.findFirst({
-        where: { user: { id: user.id } },
-        select: { id: true },
-      });
-
-      if (!customer) {
+      if (!user.customerId) {
         return NextResponse.json({ error: "Customer not found" }, { status: 404 });
       }
-
-      customerId = customer.id;
+      customerId = user.customerId;
     }
 
     // Find order - admins can update all orders, regular users only their own
     const existingOrder = await prisma.order.findFirst({
       where: user.role === 'ADMIN'
         ? { id: orderId }
-        : { id: orderId, customerId },
+        : { id: orderId, customerId: customerId! },
     });
 
     if (!existingOrder) {

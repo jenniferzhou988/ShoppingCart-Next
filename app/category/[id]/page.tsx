@@ -96,7 +96,7 @@ export default function CategoryPage() {
           <p className="text-gray-600 mb-6">The category you're looking for doesn't exist.</p>
           <Link
             href="/"
-            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            className="btn btn-primary btn-app"
           >
             Go Home
           </Link>
@@ -172,15 +172,15 @@ export default function CategoryPage() {
                     {product.salePrice ? (
                       <>
                         <span className="text-lg font-bold text-red-600">
-                          ${product.salePrice.toFixed(2)}
+                          ${Number(product.salePrice).toFixed(2)}
                         </span>
                         <span className="text-sm text-gray-500 line-through">
-                          ${product.price.toFixed(2)}
+                          ${Number(product.price).toFixed(2)}
                         </span>
                       </>
                     ) : (
                       <span className="text-lg font-bold text-gray-900">
-                        ${product.price.toFixed(2)}
+                        ${Number(product.price).toFixed(2)}
                       </span>
                     )}
                   </div>
@@ -207,7 +207,7 @@ export default function CategoryPage() {
                 {/* Action Button */}
                 <Link
                   href={`/product/${product.id}`}
-                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-md text-center hover:bg-blue-700 transition-colors block"
+                  className="btn btn-primary btn-app w-100"
                 >
                   View Details
                 </Link>

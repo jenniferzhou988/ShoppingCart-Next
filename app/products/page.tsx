@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { addShoppingCartItem } from '../../lib/shopping-cart';
 
 interface Product {
@@ -27,11 +28,13 @@ interface Product {
 }
 
 export default function ProductsPage() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [browseCategoryId, setBrowseCategoryId] = useState<string>('');
   const [addedProducts, setAddedProducts] = useState<Set<number>>(new Set());
 
   const handleAddToCart = (product: Product) => {
@@ -87,6 +90,20 @@ export default function ProductsPage() {
     )
   );
 
+  const categoryOptions = Array.from(
+    new Map(
+      products.flatMap((product) =>
+        product.productCategoryLinks.map((link) => [
+          String(link.productCategory.id),
+          {
+            id: String(link.productCategory.id),
+            name: link.productCategory.productCategoryName,
+          },
+        ])
+      )
+    ).values()
+  );
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -115,7 +132,7 @@ export default function ProductsPage() {
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            className="btn btn-primary btn-app"
           >
             Try Again
           </button>
@@ -157,6 +174,26 @@ export default function ProductsPage() {
             ))}
           </select>
         </div>
+        <div className="sm:w-72">
+          <select
+            value={browseCategoryId}
+            onChange={(e) => {
+              const selectedId = e.target.value;
+              setBrowseCategoryId(selectedId);
+              if (selectedId) {
+                router.push(`/category/${selectedId}`);
+              }
+            }}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">Browse by Product Category</option>
+            {categoryOptions.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Results Summary */}
@@ -194,7 +231,7 @@ export default function ProductsPage() {
                 setSearchTerm('');
                 setSelectedCategory('');
               }}
-              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              className="btn btn-outline-primary btn-app"
             >
               Clear Filters
             </button>
@@ -296,7 +333,7 @@ export default function ProductsPage() {
                 {/* Action Button */}
                 <Link
                   href={`/product/${product.id}`}
-                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-md text-center hover:bg-blue-700 transition-colors block"
+                  className="btn btn-primary btn-app w-100"
                 >
                   View Details
                 </Link>
@@ -304,10 +341,10 @@ export default function ProductsPage() {
                   type="button"
                   onClick={() => handleAddToCart(product)}
                   disabled={addedProducts.has(product.id)}
-                  className={`w-full mt-2 px-4 py-2 rounded-md text-center transition-colors ${
+                  className={`btn btn-app w-100 mt-2 ${
                     addedProducts.has(product.id)
-                      ? 'bg-green-100 text-green-700 cursor-not-allowed'
-                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      ? 'btn-success disabled'
+                      : 'btn-outline-primary'
                   }`}
                 >
                   {addedProducts.has(product.id) ? 'Added to Cart' : 'Add to Cart'}

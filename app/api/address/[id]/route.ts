@@ -3,9 +3,9 @@ import { prisma } from "../../../../lib/prisma";
 import { validateStartup } from "../../../../lib/startup";
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // GET a specific address by ID
@@ -13,7 +13,8 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   validateStartup();
 
   try {
-    const id = parseInt(params.id);
+    const { id: idParam } = await params;
+    const id = parseInt(idParam);
 
     if (isNaN(id)) {
       return NextResponse.json(
@@ -48,7 +49,8 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   validateStartup();
 
   try {
-    const id = parseInt(params.id);
+    const { id: idParam } = await params;
+    const id = parseInt(idParam);
 
     if (isNaN(id)) {
       return NextResponse.json(
@@ -133,7 +135,8 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
   validateStartup();
 
   try {
-    const id = parseInt(params.id);
+    const { id: idParam } = await params;
+    const id = parseInt(idParam);
 
     if (isNaN(id)) {
       return NextResponse.json(

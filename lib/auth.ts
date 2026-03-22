@@ -44,6 +44,7 @@ export async function getCurrentUser(token: string) {
     id: user.id,
     email: user.email,
     role: user.role.name,
+    customerId: user.customerId,
     createdAt: user.createdAt,
   };
 }
