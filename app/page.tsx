@@ -3,13 +3,12 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getAuthState, logout, isAuthenticated, getCurrentUser, type AuthState } from "../lib/auth-client";
+import { getAuthState, logout, type AuthState } from "../lib/auth-client";
 
 export default function Home() {
   const [authState, setAuthState] = useState<AuthState>({ token: null, user: null, isAuthenticated: false });
 
   useEffect(() => {
-    // Check auth state on component mount
     setAuthState(getAuthState());
   }, []);
 
@@ -19,78 +18,74 @@ export default function Home() {
   };
 
   return (
-    <div className="bg-gray-50">
-      {/* Hero Section */}
-      <div className="bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center">
+    <div className="bg-light">
+      <div className="bg-white border-bottom">
+        <div className="container py-5">
+          <div className="text-center py-3 py-md-4">
             <Image
-              className="mx-auto mb-8 dark:invert"
+              className="mx-auto mb-4"
               src="/next.svg"
               alt="ShoppingCart logo"
               width={120}
               height={25}
               priority
             />
-            <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl md:text-6xl mb-4">
-              Welcome to ShoppingCart
-            </h1>
-            <p className="max-w-2xl mx-auto text-xl text-gray-600 mb-8">
+            <h1 className="display-5 fw-bold text-dark mb-3">Welcome to ShoppingCart</h1>
+            <p className="lead text-secondary mx-auto mb-4" style={{ maxWidth: "44rem" }}>
               Discover amazing products across various categories. Shop with confidence and enjoy fast, secure delivery.
             </p>
 
             {authState.isAuthenticated ? (
-              <div className="space-y-6">
-                <div className="bg-gray-50 rounded-lg p-6 max-w-md mx-auto">
-                  <p className="text-lg text-gray-700 mb-4">
-                    Welcome back, <span className="font-semibold text-blue-600">{authState.user?.email}</span>!
-                  </p>
-                  <p className="text-sm text-gray-600 mb-4">
-                    You are logged in as a <span className="font-medium">{authState.user?.role}</span>.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Link
-                      href="/products"
-                      className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors text-center"
-                    >
-                      Browse Products
-                    </Link>
-                    {authState.user?.role === 'admin' && (
-                      <Link
-                        href="/admin"
-                        className="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 transition-colors text-center"
-                      >
-                        Admin Panel
+              <div className="d-flex justify-content-center">
+                <div className="card shadow-sm border-0" style={{ maxWidth: "38rem" }}>
+                  <div className="card-body p-4">
+                    <p className="fs-5 text-secondary mb-3">
+                      Welcome back, <span className="fw-semibold text-primary">{authState.user?.email}</span>!
+                    </p>
+                    <p className="small text-muted mb-4">
+                      You are logged in as a <span className="fw-medium text-capitalize">{authState.user?.role}</span>.
+                    </p>
+                    <div className="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                      <Link href="/products" className="btn btn-primary btn-app">
+                        <i className="bi bi-bag-check me-2"></i>
+                        {' '}
+                        Browse Products
                       </Link>
-                    )}
-                    <button
-                      onClick={handleLogout}
-                      className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition-colors"
-                    >
-                      Logout
-                    </button>
+                      {authState.user?.role === 'admin' && (
+                        <Link href="/admin" className="btn btn-outline-primary btn-app">
+                          <i className="bi bi-speedometer2 me-2"></i>
+                          {' '}
+                          Admin Panel
+                        </Link>
+                      )}
+                      <button onClick={handleLogout} className="btn btn-outline-danger btn-app">
+                        <i className="bi bi-box-arrow-right me-2"></i>
+                        {' '}
+                        Logout
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link
-                    href="/products"
-                    className="bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700 transition-colors text-center font-medium"
-                  >
+              <div className="d-flex flex-column align-items-center gap-3">
+                <div className="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+                  <Link href="/products" className="btn btn-primary btn-lg btn-app">
+                    <i className="bi bi-cart3 me-2"></i>
+                    {' '}
                     Start Shopping
                   </Link>
-                  <Link
-                    href="/register"
-                    className="bg-white text-blue-600 border border-blue-600 px-8 py-3 rounded-md hover:bg-blue-50 transition-colors text-center font-medium"
-                  >
+                  <Link href="/register" className="btn btn-outline-primary btn-lg btn-app">
+                    <i className="bi bi-person-plus me-2"></i>
+                    {' '}
                     Create Account
                   </Link>
                 </div>
-                <p className="text-gray-600">
+                <p className="text-secondary mb-0">
                   Already have an account?{' '}
-                  <Link href="/login" className="text-blue-600 hover:text-blue-800 font-medium">
+                  <Link href="/login" className="link-primary fw-semibold text-decoration-none">
+                    <i className="bi bi-box-arrow-in-right me-1"></i>
+                    {' '}
                     Sign in
                   </Link>
                 </p>
@@ -100,43 +95,48 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Features Section */}
-      <div className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose ShoppingCart?</h2>
-            <p className="text-xl text-gray-600">Experience the best online shopping with our premium features</p>
+      <div className="py-5 bg-white">
+        <div className="container">
+          <div className="text-center mb-5">
+            <h2 className="h1 fw-bold text-dark mb-3">Why Choose ShoppingCart?</h2>
+            <p className="lead text-secondary mb-0">Experience the best online shopping with our premium features</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
+          <div className="row g-4">
+            <div className="col-12 col-md-4">
+              <div className="card h-100 border-0 shadow-sm text-center">
+                <div className="card-body p-4">
+                  <div className="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center mb-3" style={{ width: "4rem", height: "4rem" }}>
+                    <i className="bi bi-truck fs-3"></i>
+                  </div>
+                  <h3 className="h5 fw-semibold text-dark mb-2">Fast Delivery</h3>
+                  <p className="text-secondary mb-0">Get your orders delivered quickly and securely to your doorstep.</p>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Fast Delivery</h3>
-              <p className="text-gray-600">Get your orders delivered quickly and securely to your doorstep.</p>
             </div>
 
-            <div className="text-center">
-              <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+            <div className="col-12 col-md-4">
+              <div className="card h-100 border-0 shadow-sm text-center">
+                <div className="card-body p-4">
+                  <div className="rounded-circle bg-success bg-opacity-10 text-success d-inline-flex align-items-center justify-content-center mb-3" style={{ width: "4rem", height: "4rem" }}>
+                    <i className="bi bi-patch-check fs-3"></i>
+                  </div>
+                  <h3 className="h5 fw-semibold text-dark mb-2">Quality Products</h3>
+                  <p className="text-secondary mb-0">Shop from a curated selection of high-quality products you can trust.</p>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Quality Products</h3>
-              <p className="text-gray-600">Shop from a curated selection of high-quality products you can trust.</p>
             </div>
 
-            <div className="text-center">
-              <div className="bg-purple-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <svg className="h-8 w-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
+            <div className="col-12 col-md-4">
+              <div className="card h-100 border-0 shadow-sm text-center">
+                <div className="card-body p-4">
+                  <div className="rounded-circle bg-info bg-opacity-10 text-info d-inline-flex align-items-center justify-content-center mb-3" style={{ width: "4rem", height: "4rem" }}>
+                    <i className="bi bi-shield-lock fs-3"></i>
+                  </div>
+                  <h3 className="h5 fw-semibold text-dark mb-2">Secure Shopping</h3>
+                  <p className="text-secondary mb-0">Your personal information and payments are always protected.</p>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Secure Shopping</h3>
-              <p className="text-gray-600">Your personal information and payments are always protected.</p>
             </div>
           </div>
         </div>

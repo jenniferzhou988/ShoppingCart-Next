@@ -40,9 +40,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find customer through user relationship
-    const customer = await prisma.customer.findFirst({
-      where: { user: { id: user.id } },
+    if (!user.customerId) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+
+    const customer = await prisma.customer.findUnique({
+      where: { id: user.customerId },
     });
 
     if (!customer) {
@@ -80,7 +83,7 @@ export async function POST(req: NextRequest) {
     if (existingItem) {
       // Update quantity and total price
       const newQuantity = existingItem.quantity + quantity;
-      const totalPrice = product.price * newQuantity;
+      const totalPrice = Number(product.price) * newQuantity;
 
       const updatedItem = await prisma.shoppingCartDetail.update({
         where: { id: existingItem.id },
@@ -96,7 +99,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(updatedItem, { status: 200 });
     } else {
       // Create new cart item
-      const totalPrice = product.price * quantity;
+      const totalPrice = Number(product.price) * quantity;
 
       const newItem = await prisma.shoppingCartDetail.create({
         data: {

@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { validateStartup } from "../../../../lib/startup";
 
-interface RouteParams { params: { id: string; }; }
+interface RouteParams { params: Promise<{ id: string; }>; }
 
 export async function GET(req: NextRequest, { params }: RouteParams) {
   validateStartup();
   try {
-    const id = Number.parseInt(params.id, 10);
+    const { id: idParam } = await params;
+    const id = Number.parseInt(idParam, 10);
     if (Number.isNaN(id)) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
 
     const category = await prisma.productCategory.findUnique({
@@ -42,7 +43,8 @@ function buildCategoryUpdateData(body: CategoryUpdatePayload): Record<string, un
 export async function PUT(req: NextRequest, { params }: RouteParams) {
   validateStartup();
   try {
-    const id = Number.parseInt(params.id, 10);
+    const { id: idParam } = await params;
+    const id = Number.parseInt(idParam, 10);
     if (Number.isNaN(id)) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
 
     const existing = await prisma.productCategory.findUnique({ where: { id } });
@@ -86,7 +88,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
   validateStartup();
   try {
-    const id = Number.parseInt(params.id, 10);
+    const { id: idParam } = await params;
+    const id = Number.parseInt(idParam, 10);
     if (Number.isNaN(id)) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
 
     const existing = await prisma.productCategory.findUnique({ where: { id } });

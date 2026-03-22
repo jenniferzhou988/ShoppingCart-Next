@@ -6,7 +6,7 @@ import { validateStartup } from "../../../../../lib/startup";
 // DELETE - Remove item from shopping cart
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { itemId: string } }
+  { params }: { params: Promise<{ itemId: string }> }
 ) {
   validateStartup();
 
@@ -22,14 +22,18 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid token or user not found" }, { status: 401 });
     }
 
-    const itemId = parseInt(params.itemId);
+    const { itemId: itemIdParam } = await params;
+    const itemId = parseInt(itemIdParam);
     if (isNaN(itemId)) {
       return NextResponse.json({ error: "Invalid item ID" }, { status: 400 });
     }
 
-    // Find customer through user relationship
-    const customer = await prisma.customer.findFirst({
-      where: { user: { id: user.id } },
+    if (!user.customerId) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+
+    const customer = await prisma.customer.findUnique({
+      where: { id: user.customerId },
     });
 
     if (!customer) {

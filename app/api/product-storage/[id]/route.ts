@@ -43,13 +43,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { productId, quantity, modifiedBy } = body as {
+    const { productId, quantity } = body as {
       productId?: number;
       quantity?: number;
-      modifiedBy?: string;
     };
 
-    const updateData: Record<string, any> = {};
+    const updateData: Record<string, unknown> = {};
     if (productId !== undefined) {
       const product = await prisma.product.findUnique({ where: { id: productId } });
       if (!product) {
@@ -58,7 +57,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       updateData.product = { connect: { id: productId } };
     }
     if (quantity !== undefined) updateData.quantity = quantity;
-    if (modifiedBy !== undefined) updateData.modifiedBy = modifiedBy;
 
     const updated = await prisma.productStorage.update({
       where: { id: storageId },

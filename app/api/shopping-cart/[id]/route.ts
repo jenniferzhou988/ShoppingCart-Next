@@ -6,7 +6,7 @@ import { validateStartup } from "../../../../lib/startup";
 // GET - Get specific shopping cart by ID (only if it belongs to the authenticated user)
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   validateStartup();
 
@@ -22,14 +22,18 @@ export async function GET(
       return NextResponse.json({ error: "Invalid token or user not found" }, { status: 401 });
     }
 
-    const cartId = parseInt(params.id);
+    const { id: idParam } = await params;
+    const cartId = parseInt(idParam);
     if (isNaN(cartId)) {
       return NextResponse.json({ error: "Invalid cart ID" }, { status: 400 });
     }
 
-    // Find customer through user relationship
-    const customer = await prisma.customer.findFirst({
-      where: { user: { id: user.id } },
+    if (!user.customerId) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+
+    const customer = await prisma.customer.findUnique({
+      where: { id: user.customerId },
     });
 
     if (!customer) {
